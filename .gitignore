@@ -1,0 +1,26 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+dist-ssr
+
+# Local env files
+*.local
+.env
+.env.*
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Editor/tool state
+.vscode/*
+!.vscode/extensions.json
+.idea
+.freebuff
+
+# Archived third-party reference assets and test output
+reference/
+coverage/
