@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { loadJson, saveJson } from '../domain/storage'
 import { supabase } from '../lib/supabase'
+import { useUserRealtime } from './useUserRealtime'
 import { toISODate } from '../domain/dates'
 import type { WeightEntry } from '../domain/types'
 
@@ -79,7 +80,33 @@ export function useWeights(userId: string) {
     }
   }, [userId, applyRealtimeDate])
 
-  // Cloud laden + Live-Synchronisierung + Migration alter Lokaldaten.
+  // Live-Synchronisierung: Kanal in eigenem Hook (Lebensdauer, Fehler, Filter).
+  useUserRealtime({
+    channel: 'weight-entries',
+    table: 'weight_entries',
+    userId,
+    onRow: (event, raw) => {
+      const row = raw as { entry_date?: string; kg?: number | string }
+      if (!row.entry_date) return
+      const date = row.entry_date
+      if (event === 'DELETE') {
+        realtimeByDate.current.set(date, null)
+      } else {
+        // numeric-Spalten können als Zahl oder String kommen.
+        const kg = typeof row.kg === 'number' ? row.kg
+          : typeof row.kg === 'string' ? Number(row.kg)
+          : NaN
+        if (!Number.isFinite(kg) || kg < 30 || kg > 300) return
+        realtimeByDate.current.set(date, kg)
+      }
+      // Eigener Upload läuft noch: Overlay merken, persist() wendet es nach.
+      if (dirtyDates.current.has(date)) return
+      applyRealtimeDate(date)
+    },
+    onChannelError: () => setError('Gewichts-Live-Synchronisierung unterbrochen. Bitte Verbindung prüfen.'),
+  })
+
+  // Cloud laden + Migration alter Lokaldaten.
   useEffect(() => {
     if (!supabase) return
     let active = true
@@ -134,36 +161,6 @@ export function useWeights(userId: string) {
       localStorage.setItem(IMPORT_MARKER + userId, 'done')
     }
 
-    const channel = supabase
-      .channel(`weight-entries:${userId}`)
-      .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'weight_entries', filter: `user_id=eq.${userId}`,
-      }, (payload) => {
-        if (!active) return
-        const row = (payload.eventType === 'DELETE' ? payload.old : payload.new) as
-          { entry_date?: string; kg?: number | string }
-        if (!row.entry_date) return
-        const date = row.entry_date
-        if (payload.eventType === 'DELETE') {
-          realtimeByDate.current.set(date, null)
-        } else {
-          // numeric-Spalten können als Zahl oder String kommen.
-          const kg = typeof row.kg === 'number' ? row.kg
-            : typeof row.kg === 'string' ? Number(row.kg)
-            : NaN
-          if (!Number.isFinite(kg) || kg < 30 || kg > 300) return
-          realtimeByDate.current.set(date, kg)
-        }
-        // Eigener Upload läuft noch: Overlay merken, persist() wendet es nach.
-        if (dirtyDates.current.has(date)) return
-        applyRealtimeDate(date)
-      })
-      .subscribe((status) => {
-        if (!active) return
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          setError('Gewichts-Live-Synchronisierung unterbrochen. Bitte Verbindung prüfen.')
-        }
-      })
 
     void (async () => {
       try {
@@ -183,9 +180,8 @@ export function useWeights(userId: string) {
 
     return () => {
       active = false
-      void supabase?.removeChannel(channel)
     }
-  }, [userId, apply, applyRealtimeDate])
+  }, [userId, apply])
 
   const addWeight = useCallback((kg: number) => {
     if (!Number.isFinite(kg) || kg < 30 || kg > 300) return false

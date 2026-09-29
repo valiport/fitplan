@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { loadJson, removeKey, saveJson } from '../domain/storage'
 import { supabase } from '../lib/supabase'
+import { useUserRealtime } from './useUserRealtime'
 import type { Equipment, EquipmentSet, Sport } from '../domain/types'
 
 const LEGACY_PREFIX = 'fitplanner.equipment.'
@@ -92,7 +93,29 @@ export function useEquipment(userId: string, sport: Sport) {
     }
   }, [userId, applySport])
 
-  // Cloud laden + Live-Synchronisierung + Migration alter Lokaldaten.
+  // Live-Synchronisierung: Kanal in eigenem Hook (Lebensdauer, Fehler, Filter).
+  useUserRealtime({
+    channel: 'user-equipment',
+    table: 'user_equipment',
+    userId,
+    onRow: (event, raw) => {
+      const row = raw as { sport?: string; equipment_data?: unknown }
+      const changedSport = row.sport
+      if (!changedSport) return
+      if (event === 'DELETE') {
+        realtimeBySport.current[changedSport] = null
+        if (!dirtySports.current.has(changedSport)) applySport(changedSport as Sport, [])
+      } else {
+        const parsed = parseSet(row.equipment_data)
+        if (!parsed) return
+        realtimeBySport.current[changedSport] = parsed
+        if (!dirtySports.current.has(changedSport)) applySport(changedSport as Sport, parsed)
+      }
+    },
+    onChannelError: () => setError('Geräte-Live-Synchronisierung unterbrochen. Bitte Verbindung prüfen.'),
+  })
+
+  // Cloud laden + Migration alter Lokaldaten.
   useEffect(() => {
     if (!supabase) return
     let active = true
@@ -158,32 +181,6 @@ export function useEquipment(userId: string, sport: Sport) {
       localStorage.setItem(IMPORT_MARKER + userId, 'done')
     }
 
-    const channel = supabase
-      .channel(`user-equipment:${userId}`)
-      .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'user_equipment', filter: `user_id=eq.${userId}`,
-      }, (payload) => {
-        if (!active) return
-        const row = (payload.eventType === 'DELETE' ? payload.old : payload.new) as
-          { sport?: string; equipment_data?: unknown }
-        const changedSport = row.sport
-        if (!changedSport) return
-        if (payload.eventType === 'DELETE') {
-          realtimeBySport.current[changedSport] = null
-          if (!dirtySports.current.has(changedSport)) applySport(changedSport as Sport, [])
-        } else {
-          const parsed = parseSet(row.equipment_data)
-          if (!parsed) return
-          realtimeBySport.current[changedSport] = parsed
-          if (!dirtySports.current.has(changedSport)) applySport(changedSport as Sport, parsed)
-        }
-      })
-      .subscribe((status) => {
-        if (!active) return
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          setError('Geräte-Live-Synchronisierung unterbrochen. Bitte Verbindung prüfen.')
-        }
-      })
 
     void (async () => {
       try {
@@ -203,7 +200,6 @@ export function useEquipment(userId: string, sport: Sport) {
 
     return () => {
       active = false
-      void supabase?.removeChannel(channel)
     }
   }, [userId, applySport])
 
