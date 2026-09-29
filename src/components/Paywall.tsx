@@ -1,27 +1,28 @@
 // Paywall (MVP-Mock): erklärt Gratis vs. Pro. Der Upgrade-Button simuliert
 // den Kauf; in Produktion ersetzt durch Store-SDK (z. B. RevenueCat) bzw.
-// Stripe-Checkout + Webhook-Entitlement.
+// Stripe-Checkout + Webhook-Entitlement. Optik: Liquid-Glass-Karte.
 
 export default function Paywall({ onUpgrade }: { onUpgrade: () => void }) {
   return (
-    <div className="w-full max-w-md rounded-2xl border border-cyan-500/30 bg-gray-800/60 p-6 text-left">
-      <h2 className="text-xl font-semibold text-gray-100">FitPlan Pro</h2>
-      <p className="mt-1 text-sm text-gray-400">
+    <div className="glass-panel p-3 text-left">
+      <h2 className="text-[14px] font-bold text-[#ffcf7e]">🏋 FitPlan Pro</h2>
+      <p className="mt-0.5 text-[12px] text-[#8bada7]">
         Du nutzt die Gratis-Version. Pro schaltet alles frei:
       </p>
-      <ul className="mt-3 flex flex-col gap-1.5 text-sm text-gray-300">
-        <li>✓ Mehr Rezepte pro Mahlzeit (24 statt 5)</li>
+      <ul className="mt-1.5 flex flex-col gap-0.5 text-[12px] text-[#a9c4be]">
+        <li>✓ Übungen an deine Geräte anpassen (Studio, Hanteln, Bänder …)</li>
+        <li>✓ Keine Übungs-Wiederholung in der Woche — mehr Abwechslung</li>
         <li>✓ Wochenplan unbegrenzt neu würfeln</li>
         <li>✓ Kalorien-Übersicht & Verlaufsanalyse</li>
         <li>✓ Einkaufsliste als Text-Export</li>
       </ul>
       <button
         onClick={onUpgrade}
-        className="mt-4 w-full rounded-lg bg-cyan-500 px-4 py-2.5 font-medium text-gray-950 transition hover:bg-cyan-400"
+        className="glass-btn glass-btn-primary mt-2 w-full !py-2 !text-[13px]"
       >
         Pro freischalten (Demo)
       </button>
-      <p className="mt-2 text-xs text-gray-500">
+      <p className="mt-1 text-[10px] text-[#8bada7]">
         Demo: Kauf wird lokal simuliert. In der Produktion: RevenueCat/Stripe.
       </p>
     </div>

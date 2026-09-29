@@ -5,6 +5,9 @@ Non-obvious learnings for future sessions in this repo. Terse by design.
 ## Session process
 - An approved plan does NOT mean the work exists: in one session, the post-approval implementation turn silently produced zero file changes. Always verify worktree state (`ls`, build artifacts) before building on prior turns.
 - Don't trust click success in the live preview: verify each click's effect with a fresh snapshot; uids go stale after any re-render and one click landed on the wrong tab because layout shifted.
+- Session restarts kill the dev server; `Start-Process cmd '/c npm run dev > vite-dev.log 2>&1'` + `Test-NetConnection localhost -Port 5173` is the reliable restart pattern (nohup is not available on this Windows host).
+- Model-generated `write_file`/`str_replace` calls can emit corrupted tokens (broken JSX, invented imports). After any glitchy edit, re-read the file before building; a clean full-file rewrite of the affected file is the fastest recovery.
+- Supabase SQL editor inserts via preview automation: Monaco ignores programmatic value-set; copy to real clipboard (`execCommand('copy')` on a hidden textarea), focus the `.monaco-editor textarea`, then send real Ctrl+V via `preview_press`.
 
 ## Environment (Windows host, German locale)
 - `run_terminal_command` has no `process_type: BACKGROUND`. Run dev servers detached: `nohup npm run dev > vite-dev.log 2>&1 &`, then `sleep` + `curl` to verify.
@@ -19,6 +22,10 @@ Non-obvious learnings for future sessions in this repo. Terse by design.
 - Do not assert on `document.body.innerText` for styled text: Tailwind `uppercase` changes rendered text (`GRUNDUMSATZ`), so `includes('Grundumsatz')` is false. Match case-insensitively or use snapshots/aria.
 
 ## Architecture couplings & constraints
+- Cloud backend is LIVE: Supabase project `nekbtgufqysaodahknmv` (keys in git-ignored `.env.local`; `.env.example` must stay placeholder-only). Test account `buffy.test@web.de`. `supabase/setup.sql` is idempotent and must be re-run from the dashboard if tables are missing (app then shows the profile-retry screen instead of data).
+- XP design was replaced by "Liquid Glass" (user request): glass classes live in `index.css` (`.glass-*`), primitives keep their old XP names in `ui.tsx` (XpWindow, XpButton…) as compat aliases. New UI should use glass classes, not XP bevel colors (#ece9d8/#003399/#808080 are gone).
+- Meal photo flow: `DayView` time-check (`checkPhotoTime` via `file.lastModified`) → optional warning with "Trotzdem verwenden" → `completeMealWithPhoto` (upload first, then DB upsert). Meal checks REQUIRE a photo both client- and DB-side (`meal_requires_photo` constraint); workout checks are photo-less. Keep both in sync with `supabase/setup.sql`.
+- Photo preview is deliberately small (h-24 w-32) with a lightbox zoom (`PhotoLightbox`: Escape/backdrop close, body scroll lock resets to '' not restored value).
 - Pro entitlement is checked in exactly one place: `src/hooks/usePro.ts`. Future payment integration (RevenueCat/Stripe) must hook there. The upgrade button is a local demo; real payments need a backend/webhooks — deliberately out of scope (user decision).
 - Hidden coupling: `ShoppingList`'s "only checked days" filter matches the exact check-id format `d${dayIndex}-workout-0` produced in `DayView`. Change one and the other silently breaks.
 - Reroll was once a no-op because `rerolls` did not reach the deterministic builder; it is now fixed by passing a seed through `buildWeekPlan` into recipe/workout selection. Preserve that data flow when changing plan generation.
@@ -32,6 +39,13 @@ Non-obvious learnings for future sessions in this repo. Terse by design.
 ## Tooling quirks
 - `write_file` rejects calls missing the `instructions` field; the validation error only shows truncated content, which is easy to misread as a size problem.
 - `write_doc` is unavailable in this environment despite being listed as a tool; use `write_file` for new files. Shell redirection can also be refused while the client reports plan mode, even when `exit_plan` reports the opposite.
+- In `run_terminal_command`, bash eats `$var` inside double-quoted powershell -Command strings; use single quotes around the whole -Command and double quotes inside, or avoid variables.
+- Supabase dashboard storage list API: `object/list` returns folders as bare names (no items); recurse per prefix. Object `sign` + fetch works; HEAD on signed URLs returns 400 (use GET).
 
 ## Architecture couplings
 - A user-selectable workout must stay aligned across `training.ts` (option pools and supplements), `weekPlan.ts` (override validation/application), `DayView.tsx` (selector), `App.tsx` (memo dependencies and callbacks), and a sport-scoped localStorage hook; changing only the UI does not change the generated plan.
+
+## Git workflow (user requirement)
+- The project lives at `https://github.com/valiport/fitplan.git`; the canonical branch is `main`. **After finishing every task, commit the changes and push them to `origin/main`** — the user explicitly asked that changes are always mirrored to GitHub.
+- No `user.name`/`user.email` is configured locally. Commit with inline identity matching the repo history: `git -c user.name=Codebuff -c user.email=noreply@codebuff.com commit …` (do not alter git config).
+- `gh` is authenticated as `valiport` (HTTPS); pushes work without extra setup. A stale `fitplan-mvp` branch exists on the remote (snapshot of the MVP commit) — leave it alone unless asked.
