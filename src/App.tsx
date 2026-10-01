@@ -133,11 +133,10 @@ function PlannerScreen({ profile, userId, onReset, isPro, onUpgrade, onResetPro 
         collectionApi={{
           addDrop: collectionHook.addDrop,
           applyUpgrade: collectionHook.applyUpgrade,
-          creditCoins: collectionHook.creditCoins,
-          spendCoins: collectionHook.spendCoins,
-          adjustInventory: collectionHook.adjustInventory,
+          refresh: collectionHook.refresh,
+          error: collectionHook.error,
         }}
-        friends={friendsHook.friends}
+        friendsApi={friendsHook}
         tradesApi={tradesHook}
         marketApi={marketHook}
       />
@@ -167,9 +166,12 @@ function SignedInApp({ userId }: { userId: string }) {
     setSavingProfile(false)
   }
   const { isPro, upgrade, reset } = usePro()
+  const [upgradeError, setUpgradeError] = useState<string | null>(null)
   const handleUpgrade = (plan: BillingInterval) => {
+    setUpgradeError(null)
     void upgrade(plan).catch((err: unknown) => {
       console.error('Pro-Upgrade fehlgeschlagen:', err)
+      setUpgradeError(err instanceof Error ? err.message : 'Der Kauf konnte nicht gestartet werden. Bitte später erneut versuchen.')
     })
   }
 
@@ -182,6 +184,7 @@ function SignedInApp({ userId }: { userId: string }) {
   </DesktopFrame>
   return <>
     {error && <p role="alert" className="max-w-md rounded-[14px] border border-[#ff9b92]/30 bg-[#331514]/80 p-2 text-[11px] text-[#ff9b92] shadow-[0_2px_10px_rgba(31,45,71,0.12)]">{error}</p>}
+    {upgradeError && <p role="alert" className="max-w-md rounded-[14px] border border-[#ff9b92]/30 bg-[#331514]/80 p-2 text-[11px] text-[#ff9b92] shadow-[0_2px_10px_rgba(31,45,71,0.12)]">{upgradeError}</p>}
     {profile
       ? <PlannerScreen profile={profile} userId={userId} onReset={() => { void clear() }} isPro={isPro} onUpgrade={handleUpgrade} onResetPro={reset} />
       : savingProfile

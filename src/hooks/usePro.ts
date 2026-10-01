@@ -24,7 +24,10 @@ const KEY = 'fitplanner.pro.v1'
 const priceMonthly = import.meta.env.VITE_STRIPE_PRICE_MONTHLY?.trim()
 const priceYearly = import.meta.env.VITE_STRIPE_PRICE_YEARLY?.trim()
 
-/** true, sobald echte Stripe-Preise konfiguriert sind → Checkout statt Demo. */
+/** true, sobald mindestens EIN echter Stripe-Preis gesetzt ist → nie Demo-Kauf. */
+export const stripeAnyPriceConfigured = Boolean(priceMonthly || priceYearly)
+
+/** true, wenn BEIDE Preise gesetzt sind (volle Konfiguration). */
 export const stripeCheckoutConfigured = Boolean(priceMonthly && priceYearly)
 
 export function usePro() {
@@ -60,7 +63,13 @@ export function usePro() {
   }, [])
 
   const upgrade = useCallback(async (plan: BillingInterval = 'yearly') => {
-    if (stripeCheckoutConfigured && supabase) {
+    // Teilweise konfiguriert: KEIN Demo-Fallback — sonst käme ein Nutzer
+    // ohne Zahlung an Pro, obwohl echte Preise gesetzt sind.
+    if (stripeAnyPriceConfigured && !stripeCheckoutConfigured) {
+      throw new Error('Der Kauf ist noch nicht verfügbar: Es fehlt ein Stripe-Preis in der Konfiguration.')
+    }
+    if (stripeCheckoutConfigured) {
+      if (!supabase) throw new Error('Der Kauf benötigt eine Cloud-Verbindung. Bitte später erneut versuchen.')
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) throw new Error('Bitte zuerst anmelden.')
       const res = await fetch('/.netlify/functions/create-checkout-session', {

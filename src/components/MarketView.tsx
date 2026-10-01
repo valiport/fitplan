@@ -10,13 +10,12 @@ import type { MarketListing, MarketTransaction, useMarket } from '../hooks/useCo
 import type { Inventory } from '../domain/plates'
 import type { Rarity } from '../domain/plates'
 
-export default function MarketView({ coins, inventory, marketApi, onSold, onBought, onError }: {
+export default function MarketView({ coins, inventory, marketApi, onChanged, onError }: {
   coins: number
   inventory: Inventory
   marketApi: ReturnType<typeof useMarket>
-  /** Wallet/Inventar nach Verkauf/Kauf lokal nachziehen. */
-  onSold: (plateId: string, price: number) => void
-  onBought: (plateId: string, price: number) => void
+  /** Wallet/Inventar nach atomarer Cloud-Transaktion neu laden. */
+  onChanged: () => void
   onError: (message: string) => void
 }) {
   const [sellPlateId, setSellPlateId] = useState('')
@@ -48,7 +47,7 @@ export default function MarketView({ coins, inventory, marketApi, onSold, onBoug
     setBusy(true)
     try {
       await marketApi.createListing(sellPlate.id, sellPrice)
-      onSold(sellPlate.id, sellPrice)
+      onChanged()
       setSellPlateId('')
       setSellPrice(0)
     } catch (cause) {
@@ -66,7 +65,7 @@ export default function MarketView({ coins, inventory, marketApi, onSold, onBoug
     setBusy(true)
     try {
       await marketApi.buyListing(listing.id)
-      onBought(listing.plateId, listing.price)
+      onChanged()
     } catch (cause) {
       onError(cause instanceof Error ? cause.message : 'Kauf fehlgeschlagen.')
     } finally {
@@ -135,6 +134,47 @@ export default function MarketView({ coins, inventory, marketApi, onSold, onBoug
           </>
         )}
       </XpGroupBox>
+
+      {/* Eigene aktive Angebote */}
+      {marketApi.ownListings.length > 0 && (
+        <XpGroupBox title="Meine Angebote" className="mt-2">
+          <ul className="space-y-1">
+            {marketApi.ownListings.map((listing) => {
+              const plate = getPlate(listing.plateId)
+              if (!plate) return null
+              return (
+                <li key={listing.id} className="glass-inset flex items-center gap-2 p-2">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[12px] font-semibold text-[#eaf6f3]">{plate.name}</span>
+                    <span className="block text-[10px] text-[#8bada7]">{formatWeight(plate.weightKg)} · eingestellt am {listing.createdAt.slice(0, 10)}</span>
+                  </span>
+                  <span className="shrink-0 text-[12px] font-bold tabular-nums text-[#ffcf7e]">
+                    {listing.price.toLocaleString('de-DE')} 🪙
+                  </span>
+                  <XpButton
+                    variant="danger"
+                    className="!px-2 !py-1 !text-[11px]"
+                    disabled={busy}
+                    onClick={() => {
+                      setBusy(true)
+                      void marketApi.cancelListing(listing.id).then(() => {
+                        onChanged()
+                      }).catch((cause: unknown) => {
+                        onError(cause instanceof Error ? cause.message : 'Angebot konnte nicht zurückgezogen werden.')
+                      }).finally(() => setBusy(false))
+                    }}
+                  >
+                    Zurückziehen
+                  </XpButton>
+                </li>
+              )
+            })}
+          </ul>
+          <p className="mt-1 text-[10px] text-[#8bada7]">
+            Die Platte bleibt bis zum Verkauf reserviert — zurückziehen gibt sie zurück ins Inventar.
+          </p>
+        </XpGroupBox>
+      )}
 
       {/* Angebote durchsuchen */}
       <XpGroupBox title="Angebote" className="mt-2">

@@ -95,7 +95,7 @@ async function upsertSubscription(
       ? subscription.current_period_end
       : (subscription.ended_at ?? subscription.current_period_end)
 
-  await fetch(`${supabaseUrl}/rest/v1/subscriptions`, {
+  const res = await fetch(`${supabaseUrl}/rest/v1/subscriptions`, {
     method: 'POST',
     headers: {
       authorization: `Bearer ${serviceRoleKey}`,
@@ -115,6 +115,12 @@ async function upsertSubscription(
       updated_at: new Date().toISOString(),
     }),
   })
+  // Fehler nicht verschweigen: ein 200 hier würde Stripe vom Retry abhalten
+  // und der zahlende Kunde bliebe dauerhaft ohne Pro.
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '')
+    throw new Error(`Supabase-Upsert fehlgeschlagen (${res.status}): ${detail}`)
+  }
 }
 
 /** Ermittelt die Supabase-User-ID anhand der Stripe-Kunden-ID (Fallback-Weg). */

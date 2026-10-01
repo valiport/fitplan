@@ -38,41 +38,49 @@ export default async (req: Request) => {
     return json(401, { error: 'Nicht angemeldet.' })
   }
 
-  // 2) Gewählten Tarif auflösen.
+  // 2) Gewählten Tarif auflösen (nur bekannte Intervalle zulassen — sonst
+  // würde ein unbekanntes Feld still auf das Jahresabo fallen).
   let body: { interval?: unknown }
   try {
     body = (await req.json()) as { interval?: unknown }
   } catch {
     return json(400, { error: 'Ungültige Anfrage.' })
   }
+  if (body.interval !== 'monthly' && body.interval !== 'yearly') {
+    return json(400, { error: 'Ungültiges Abonnement-Intervall.' })
+  }
   const priceId = body.interval === 'monthly' ? priceMonthly : priceYearly
 
-  // 3) Bestehenden Stripe-Kundenamen nachsehen, sonst neu anlegen (idempotent).
+  // 3–4) Stripe-Aufrufe abfangen: Ausfälle sauber melden statt roher 500er.
   const stripe = new Stripe(stripeKey)
-  const existing = await stripe.customers.list({ email: user.email, limit: 1 })
-  const customer =
-    existing.data[0] ??
-    (await stripe.customers.create({
-      email: user.email,
-      'metadata[supabase_user_id]': user.id,
-    }))
+  try {
+    const existing = await stripe.customers.list({ email: user.email, limit: 1 })
+    const customer =
+      existing.data[0] ??
+      (await stripe.customers.create({
+        email: user.email,
+        'metadata[supabase_user_id]': user.id,
+      }))
 
-  // 4) Checkout-Session: Abo-Modus, client_reference_id = Supabase-User.
-  const siteUrl = process.env.URL ?? 'http://localhost:5173'
-  const session = await stripe.checkout.sessions.create({
-    mode: 'subscription',
-    customer: customer.id,
-    client_reference_id: user.id,
-    line_items: [{ price: priceId, quantity: 1 }],
-    allow_promotion_codes: true,
-    success_url: `${siteUrl}/?checkout=success`,
-    cancel_url: `${siteUrl}/?checkout=cancel`,
-  })
+    // Checkout-Session: Abo-Modus, client_reference_id = Supabase-User.
+    const siteUrl = process.env.URL ?? 'http://localhost:5173'
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      customer: customer.id,
+      client_reference_id: user.id,
+      line_items: [{ price: priceId, quantity: 1 }],
+      allow_promotion_codes: true,
+      success_url: `${siteUrl}/?checkout=success`,
+      cancel_url: `${siteUrl}/?checkout=cancel`,
+    })
 
-  if (!session.url) {
-    return json(500, { error: 'Checkout-Session ohne URL.' })
+    if (!session.url) {
+      return json(500, { error: 'Checkout-Session ohne URL.' })
+    }
+    return json(200, { url: session.url })
+  } catch {
+    return json(502, { error: 'Zahlungsdienst derzeit nicht erreichbar. Bitte später erneut versuchen.' })
   }
-  return json(200, { url: session.url })
 }
 
 function json(status: number, body: unknown): Response {

@@ -40,9 +40,9 @@ export interface Database {
         Relationships: []
       }
       friends: {
-        Row: { id: string; user_id_a: string; user_id_b: string; status: string; created_at: string }
-        Insert: { id?: string; user_id_a: string; user_id_b: string; status?: string; created_at?: string }
-        Update: { id?: string; user_id_a?: string; user_id_b?: string; status?: string; created_at?: string }
+        Row: { id: string; user_id_a: string; user_id_b: string; requested_by: string; status: string; created_at: string }
+        Insert: { id?: string; user_id_a: string; user_id_b: string; requested_by: string; status?: string; created_at?: string }
+        Update: { id?: string; user_id_a?: string; user_id_b?: string; requested_by?: string; status?: string; created_at?: string }
         Relationships: []
       }
       trades: {
@@ -66,6 +66,8 @@ export interface Database {
     }
     Views: Record<string, never>
     Functions: {
+      send_friend_request: { Args: { p_to: string }; Returns: string }
+      respond_friend_request: { Args: { p_friend: string; p_accept: boolean }; Returns: undefined }
       create_trade: {
         Args: { p_to: string; p_offered: Record<string, number>; p_requested: Record<string, number> }
         Returns: string
@@ -82,6 +84,9 @@ export interface Database {
         Args: { p_plate: string; p_price: number }
         Returns: undefined
       }
+      cancel_listing: { Args: { p_listing: string }; Returns: undefined }
+      claim_check_reward: { Args: { p_week: string; p_check: string }; Returns: unknown }
+      upgrade_collection: { Args: { p_rarity: string }; Returns: string }
       buy_listing: {
         Args: { p_listing: string }
         Returns: undefined

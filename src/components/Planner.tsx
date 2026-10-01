@@ -12,10 +12,9 @@ import CollectionView from './CollectionView'
 import TradeView from './TradeView'
 import MarketView from './MarketView'
 import DropOverlay from './DropOverlay'
-import { rollDrop } from '../domain/drops'
 import type { BillingInterval } from '../hooks/usePro'
 import type { CollectionState } from '../hooks/useCollection'
-import type { Friend, useMarket, useTrades } from '../hooks/useCollectionSocial'
+import type { useFriends, useMarket, useTrades } from '../hooks/useCollectionSocial'
 import type { Plate } from '../domain/plates'
 import type { Rarity } from '../domain/plates'
 import { downloadWeekICS } from '../domain/ics'
@@ -140,7 +139,7 @@ export default function Planner({
   onOverride,
   collection,
   collectionApi,
-  friends,
+  friendsApi,
   tradesApi,
   marketApi,
 }: {
@@ -177,21 +176,22 @@ export default function Planner({
   collection: CollectionState
   /** Drop gutschreiben + Upgrade (aus useCollection). */
   collectionApi: {
-    addDrop: (plateId: string) => boolean
-    applyUpgrade: (rarity: Rarity) => boolean
-    creditCoins: (amount: number) => boolean
-    spendCoins: (amount: number) => boolean
-    adjustInventory: (plateId: string, delta: number) => boolean
+    addDrop: (weekStart: string, checkId: string, streak: number) => Promise<{ plate: Plate | null; granted: boolean }>
+    applyUpgrade: (rarity: Rarity) => Promise<boolean>
+    refresh: () => Promise<void>
+    error: string | null
   }
-  friends: Friend[]
+  friendsApi: ReturnType<typeof useFriends>
   tradesApi: ReturnType<typeof useTrades>
   marketApi: ReturnType<typeof useMarket>
 }) {
   const [tab, setTab] = useState<'plan' | 'shopping' | 'progress' | 'collection'>('plan')
   const [drop, setDrop] = useState<Plate | null>(null)
   const [dropError, setDropError] = useState<string | null>(null)
+  /** Keys als `${weekStartISO}|${checkId}` — Check-IDs sind wochenunabhängig. */
   const rewardedChecks = useRef(new Set<string>())
   const seenInit = useRef(false)
+  const lastWeek = useRef<string | null>(null)
   const [selectedDay, setSelectedDay] = useState(() => {
     const t = new Date().getDay()
     return (t + 6) % 7 // Mo=0..So=6
@@ -219,23 +219,34 @@ export default function Planner({
   // Gratis-Drop). Erst NEU dazukommende Checks lösen genau einen Drop aus.
   useEffect(() => {
     if (syncLoading) return
-    if (!seenInit.current) {
+    const rewardKey = (checkId: string) => `${weekStartISO}|${checkId}`
+    // Beim Wochenwechsel (und initial) gelten ALLE bestehenden Checks der
+    // neuen Woche als gesehen — sonst würden alt abgehakte Checks der anderen
+    // Woche beim Navigation ein Drop-Claim auslösen („zu alt"-Fehler).
+    if (!seenInit.current || lastWeek.current !== weekStartISO) {
       seenInit.current = true
-      for (const checkId of checked) rewardedChecks.current.add(checkId)
+      lastWeek.current = weekStartISO
+      for (const checkId of checked) rewardedChecks.current.add(rewardKey(checkId))
       return
     }
     for (const checkId of checked) {
-      if (!rewardedChecks.current.has(checkId)) {
-        rewardedChecks.current.add(checkId)
-        const result = rollDrop(streakInfo.streak)
-        collectionApi.addDrop(result.plate.id)
-        setDrop(result.plate)
+      const key = rewardKey(checkId)
+      if (!rewardedChecks.current.has(key)) {
+        rewardedChecks.current.add(key)
+        setDropError(null)
+        void collectionApi.addDrop(weekStartISO, checkId, streakInfo.streak)
+          .then(({ plate, granted }) => {
+            if (plate && granted) setDrop(plate)
+          })
+          .catch((cause: unknown) => {
+            setDropError(cause instanceof Error ? cause.message : 'Belohnung konnte nicht gespeichert werden.')
+          })
         break // ein Overlay nach dem anderen
       }
     }
     // Absichtlich schmal: nur auf neue Checks reagieren.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checked, syncLoading])
+  }, [checked, syncLoading, weekStartISO])
 
   return (
     <div className="flex w-full max-w-md flex-col gap-2">
@@ -261,6 +272,9 @@ export default function Planner({
         />
         <div className="p-2">
           {syncError && <p role="alert" className="mb-2 rounded-[12px] border border-[#ff9b92]/30 bg-[#331514]/80 p-2 text-[11px] text-[#ff9b92]">Sync-Fehler: {syncError}</p>}
+          {dropError && <p role="alert" className="mb-2 rounded-[12px] border border-[#ff9b92]/30 bg-[#331514]/80 p-2 text-[11px] text-[#ff9b92]">{dropError}</p>}
+          {collectionApi.error && <p role="alert" className="mb-2 rounded-[12px] border border-[#ff9b92]/30 bg-[#331514]/80 p-2 text-[11px] text-[#ff9b92]">Sammlung: {collectionApi.error}</p>}
+          {marketApi.error && <p role="alert" className="mb-2 rounded-[12px] border border-[#ff9b92]/30 bg-[#331514]/80 p-2 text-[11px] text-[#ff9b92]">Marktplatz: {marketApi.error}</p>}
           {syncLoading && <p role="status" className="mb-2 text-[11px] text-[#8bada7]">Cloud-Checks werden synchronisiert …</p>}
           {queuedCount > 0 && (
             <p role="status" className="mb-2 rounded-[12px] border border-[#ffcf7e]/30 bg-[#33270f]/85 p-2 text-[11px] text-[#ffcf7e] shadow-[0_2px_10px_rgba(0,0,0,0.3)]">
@@ -383,11 +397,18 @@ export default function Planner({
           )}
 
           {tab === 'collection' && (
-            <CollectionView userId={userId} state={collection} onUpgrade={(rarity) => collectionApi.applyUpgrade(rarity)} />
+            <CollectionView
+              userId={userId}
+              state={collection}
+              onUpgrade={(rarity) => collectionApi.applyUpgrade(rarity).then((ok) => {
+                if (!ok) setDropError('Upgrade fehlgeschlagen – genügend Duplikate vorhanden? Bitte erneut prüfen.')
+                return ok
+              })}
+            />
           )}
           {tab === 'collection' && (
             <div className="mt-2">
-              <TradeView userId={userId} inventory={collection.inventory} friends={friends} tradesApi={tradesApi} />
+              <TradeView userId={userId} inventory={collection.inventory} friendsApi={friendsApi} tradesApi={tradesApi} />
             </div>
           )}
           {tab === 'collection' && (
@@ -396,19 +417,9 @@ export default function Planner({
                 coins={collection.coins}
                 inventory={collection.inventory}
                 marketApi={marketApi}
-                onSold={(plateId, price) => {
-                  collectionApi.adjustInventory(plateId, -1)
-                  collectionApi.creditCoins(price)
-                }}
-                onBought={(plateId, price) => {
-                  collectionApi.spendCoins(price)
-                  collectionApi.adjustInventory(plateId, 1)
-                }}
+                onChanged={() => { void collectionApi.refresh() }}
                 onError={(message) => setDropError(message)}
               />
-              {dropError && (
-                <p role="alert" className="mt-1.5 rounded-[12px] border border-[#ff9b92]/30 bg-[#331514]/80 p-2 text-[11px] text-[#ff9b92]">{dropError}</p>
-              )}
             </div>
           )}
         </div>

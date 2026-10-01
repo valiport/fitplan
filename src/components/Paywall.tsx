@@ -6,7 +6,7 @@
 
 import { useState } from 'react'
 import type { BillingInterval } from '../hooks/usePro'
-import { stripeCheckoutConfigured } from '../hooks/usePro'
+import { stripeAnyPriceConfigured } from '../hooks/usePro'
 
 /** Preisauszeichnung (de-DE). In der Produktion führt Stripe die Beträge. */
 const MONTHLY_PRICE = '4,99 €'
@@ -115,7 +115,7 @@ export default function Paywall({ onUpgrade }: { onUpgrade: (plan: BillingInterv
 
       <p className="mt-1 text-center text-[10px] text-[#8bada7]">
         Jederzeit kündbar ·{' '}
-        {stripeCheckoutConfigured
+        {stripeAnyPriceConfigured
           ? 'Sichere Zahlung über Stripe.'
           : 'Demo: Kauf wird lokal simuliert. In der Produktion: Stripe-Checkout.'}
       </p>

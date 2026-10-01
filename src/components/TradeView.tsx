@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { PLATES, getPlate } from '../domain/plates'
 import { XpButton, XpGroupBox } from './ui'
-import type { Friend, Trade, TradeItems, useTrades } from '../hooks/useCollectionSocial'
+import type { FriendRequest, Trade, TradeItems, useFriends, useTrades } from '../hooks/useCollectionSocial'
 import type { Inventory } from '../domain/plates'
 
 /** Wandelt eine Inventar-Auswahl (checkboxen) in TradeItems um. */
@@ -23,17 +23,20 @@ function describeItems(items: TradeItems): string {
     .join(', ') || '—'
 }
 
-export default function TradeView({ userId, inventory, friends, tradesApi }: {
+export default function TradeView({ userId, inventory, friendsApi, tradesApi }: {
   userId: string
   inventory: Inventory
-  friends: Friend[]
+  friendsApi: ReturnType<typeof useFriends>
   tradesApi: ReturnType<typeof useTrades>
 }) {
+  const { friends, requests } = friendsApi
   const [partnerId, setPartnerId] = useState<string>('')
   const [mySelection, setMySelection] = useState<Record<string, boolean>>({})
   const [wantSelection, setWantSelection] = useState<Record<string, boolean>>({})
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [friendId, setFriendId] = useState('')
+  const [friendBusy, setFriendBusy] = useState(false)
 
   const incoming = tradesApi.trades.filter((t) => t.toUserId === userId && t.status === 'pending')
   const outgoing = tradesApi.trades.filter((t) => t.fromUserId === userId && t.status === 'pending')
@@ -70,10 +73,32 @@ export default function TradeView({ userId, inventory, friends, tradesApi }: {
       {notice && <p role="status" className="mb-2 rounded-[12px] border border-[#ffcf7e]/30 bg-[#33270f]/85 p-2 text-[11px] text-[#ffcf7e]">{notice}</p>}
 
       {/* Freunde */}
-      <XpGroupBox title="Meine Freunde">
-        {friends.length === 0 ? (
-          <p className="text-[12px] text-[#8bada7]">Noch keine Freunde — lade welche ein!</p>
-        ) : (
+      <XpGroupBox title="Freunde">
+        {friendsApi.error && <p role="alert" className="mb-1 text-[11px] text-[#ff9b92]">{friendsApi.error}</p>}
+        <div className="mb-2 flex gap-1.5">
+          <input
+            aria-label="Freundes-UUID"
+            value={friendId}
+            onChange={(event) => setFriendId(event.target.value.trim())}
+            placeholder="Freundes-UUID"
+            className="glass-input min-w-0 flex-1"
+            disabled={friendBusy}
+          />
+          <XpButton disabled={friendBusy || !friendId} onClick={() => {
+            setFriendBusy(true)
+            void friendsApi.sendRequest(friendId).then(() => setFriendId('')).catch((cause: unknown) => {
+              setNotice(cause instanceof Error ? cause.message : 'Anfrage fehlgeschlagen.')
+            }).finally(() => setFriendBusy(false))
+          }}>Anfragen</XpButton>
+        </div>
+        {!friends.length && <p className="text-[12px] text-[#8bada7]">Noch keine bestätigten Freunde.</p>}
+        {requests.length > 0 && (
+          <div className="mb-2">
+            <p className="mb-1 text-[11px] font-bold text-[#ffcf7e]">Eingehende Anfragen</p>
+            {requests.map((request) => <FriendRequestRow key={request.id} request={request} api={friendsApi} />)}
+          </div>
+        )}
+        {friends.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {friends.map((f) => (
               <button
@@ -199,6 +224,7 @@ function TradeRow({ trade, tradesApi, userId }: {
   userId: string
 }) {
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const isIncoming = trade.toUserId === userId
   const describe = (items: TradeItems) =>
     Object.entries(items)
@@ -207,10 +233,23 @@ function TradeRow({ trade, tradesApi, userId }: {
 
   const act = async (accept: boolean) => {
     setBusy(true)
+    setError(null)
     try {
       await tradesApi.respondToTrade(trade.id, accept)
     } catch (cause) {
-      alert(cause instanceof Error ? cause.message : 'Aktion fehlgeschlagen.')
+      setError(cause instanceof Error ? cause.message : 'Aktion fehlgeschlagen.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const cancel = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      await tradesApi.cancelTrade(trade.id)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Zurückziehen fehlgeschlagen.')
     } finally {
       setBusy(false)
     }
@@ -233,12 +272,39 @@ function TradeRow({ trade, tradesApi, userId }: {
             disabled={busy}
             className="!px-2 !py-1 !text-[11px]"
             variant="danger"
-            onClick={() => void tradesApi.cancelTrade(trade.id).catch((cause: unknown) => alert(cause instanceof Error ? cause.message : 'Fehlgeschlagen.'))}
+            onClick={() => void cancel()}
           >
             Zurückziehen
           </XpButton>
         )}
       </div>
+      {error && <p role="alert" className="mt-1 text-[10px] text-[#ff9b92]">{error}</p>}
+    </div>
+  )
+}
+
+function FriendRequestRow({ request, api }: { request: FriendRequest; api: ReturnType<typeof useFriends> }) {
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+  const respond = async (accept: boolean) => {
+    setBusy(true)
+    setMessage(null)
+    try {
+      await api.respondRequest(request.id, accept)
+    } catch (cause) {
+      setMessage(cause instanceof Error ? cause.message : 'Anfrage konnte nicht verarbeitet werden.')
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <div className="glass-inset mb-1 flex items-center justify-between gap-2 p-2">
+      <span className="min-w-0 truncate text-[11px] text-[#dcefec]">Nutzer {request.fromUserId.slice(0, 8)} möchte Freund werden</span>
+      <span className="flex gap-1">
+        <XpButton disabled={busy} className="!px-2 !py-1 !text-[10px]" onClick={() => void respond(true)}>Annehmen</XpButton>
+        <XpButton disabled={busy} variant="danger" className="!px-2 !py-1 !text-[10px]" onClick={() => void respond(false)}>Ablehnen</XpButton>
+      </span>
+      {message && <span role="alert" className="text-[10px] text-[#ff9b92]">{message}</span>}
     </div>
   )
 }

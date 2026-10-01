@@ -1,13 +1,13 @@
-// Sammlungs-Zustand: Coins-Wallet + Platten-Inventar.
-// Cloud-synchronisiert (Tabelle `collections`); ohne Supabase funktioniert
-// alles lokal weiter (Demo-Modus). Eigene Änderungen laufen optimistisch
-// lokal und werden hochgeschrieben — Muster wie useWeights.
+// Sammlungs-Zustand: Coins + Inventar.
+// Im Cloud-Modus sind RPCs die einzige Schreibquelle; LocalStorage wird nur
+// als Cache verwendet. Ohne Cloud bleibt die Demo lokal funktionsfähig.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { loadJson, saveJson } from '../domain/storage'
 import { supabase } from '../lib/supabase'
 import { COINS_PER_CHECK, getPlate, nextRarity, platesOfRarity } from '../domain/plates'
-import type { Inventory, Rarity } from '../domain/plates'
+import type { Inventory, Plate, Rarity } from '../domain/plates'
+import { rollDrop } from '../domain/drops'
 
 const LOCAL_KEY = 'fitplanner.collection.v1'
 const cacheKey = (userId: string) => `${LOCAL_KEY}.${userId}`
@@ -15,24 +15,26 @@ const cacheKey = (userId: string) => `${LOCAL_KEY}.${userId}`
 export interface CollectionState {
   coins: number
   inventory: Inventory
-  /** true, sobald die Cloud-Zeile geladen/abgeglichen wurde. */
   synced: boolean
 }
 
 function parseCollection(raw: unknown): CollectionState | null {
   if (typeof raw !== 'object' || raw === null) return null
-  const v = raw as Record<string, unknown>
-  if (typeof v.coins !== 'number' || !Number.isFinite(v.coins) || v.coins < 0) return null
-  if (typeof v.inventory !== 'object' || v.inventory === null) return null
+  const value = raw as Record<string, unknown>
+  if (!Number.isSafeInteger(value.coins) || (value.coins as number) < 0) return null
+  if (typeof value.inventory !== 'object' || value.inventory === null || Array.isArray(value.inventory)) return null
   const inventory: Inventory = {}
-  for (const [plateId, qty] of Object.entries(v.inventory as Record<string, unknown>)) {
-    if (Number.isInteger(qty) && (qty as number) > 0) inventory[plateId] = qty as number
-    else return null
+  for (const [plateId, qty] of Object.entries(value.inventory as Record<string, unknown>)) {
+    if (!getPlate(plateId)) continue
+    if (!Number.isSafeInteger(qty) || (qty as number) <= 0) return null
+    inventory[plateId] = qty as number
   }
-  return { coins: v.coins, inventory, synced: false }
+  return { coins: value.coins as number, inventory, synced: false }
 }
 
 const emptyState: CollectionState = { coins: 0, inventory: {}, synced: false }
+
+type RewardResult = { plate: Plate | null; granted: boolean }
 
 export function useCollection(userId: string) {
   const [state, setState] = useState<CollectionState>(
@@ -48,145 +50,106 @@ export function useCollection(userId: string) {
     saveJson(cacheKey(userId), next)
   }, [userId])
 
-  const persist = useCallback(async (next: CollectionState) => {
+  const refresh = useCallback(async () => {
     if (!supabase) return
-    try {
-      const { error: upsertError } = await supabase.from('collections').upsert({
-        user_id: userId,
-        coins: next.coins,
-        inventory: next.inventory,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id' })
-      if (upsertError) throw upsertError
-      setError(null)
-    } catch (cause) {
-      setError(cause instanceof Error
-        ? `Sammlung konnte nicht synchronisiert werden: ${cause.message}`
-        : 'Sammlung konnte nicht synchronisiert werden.')
+    const { data, error: queryError } = await supabase
+      .from('collections')
+      .select('coins,inventory')
+      .eq('user_id', userId)
+      .maybeSingle()
+    if (queryError) {
+      setError(`Sammlung konnte nicht synchronisiert werden: ${queryError.message}`)
+      throw queryError
     }
-  }, [userId])
+    if (!data) {
+      apply({ ...emptyState, synced: true })
+      setError(null)
+      return
+    }
+    const next = parseCollection({ coins: data.coins, inventory: data.inventory })
+    if (!next) {
+      const invalid = new Error('Die Cloud-Sammlung enthält ungültige Daten.')
+      setError(invalid.message)
+      throw invalid
+    }
+    apply({ ...next, synced: true })
+    setError(null)
+  }, [userId, apply])
 
-  // Cloud laden. Wallet ist additiv, Inventarzähler nehmen das Maximum —
-  // damit können Tausch/Markt (Cloud-seitig) und lokale Drops sich nicht
-  // gegenseitig kleinrechnen.
   useEffect(() => {
     if (!supabase) return
     let active = true
-    void (async () => {
-      try {
-        const { data, error: queryError } = await supabase
-          .from('collections')
-          .select('coins,inventory')
-          .eq('user_id', userId)
-          .maybeSingle()
-        if (!active) return
-        if (queryError) throw queryError
-        if (data) {
-          const cloud = parseCollection({ coins: data.coins, inventory: data.inventory })
-          if (cloud) {
-            const local = stateRef.current
-            const mergedInventory: Inventory = { ...local.inventory }
-            for (const [id, qty] of Object.entries(cloud.inventory)) {
-              mergedInventory[id] = Math.max(mergedInventory[id] ?? 0, qty)
-            }
-            apply({
-              coins: Math.max(local.coins, cloud.coins),
-              inventory: mergedInventory,
-              synced: true,
-            })
-          }
-        } else if (stateRef.current.coins > 0 || Object.keys(stateRef.current.inventory).length > 0) {
-          // Erster Cloud-Kontakt: lokalen Stand hochladen (best effort).
-          await persist(stateRef.current)
-        }
-        setError(null)
-      } catch (cause) {
-        if (!active) return
-        setError(cause instanceof Error ? cause.message : 'Sammlung konnte nicht geladen werden.')
-      }
-    })()
+    const channel = supabase
+      .channel(`collection:${userId}`)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'collections', filter: `user_id=eq.${userId}`,
+      }, () => {
+        if (active) void refresh().catch(() => undefined)
+      })
+      .subscribe()
+    void refresh().catch(() => undefined)
     return () => {
       active = false
+      void supabase?.removeChannel(channel)
     }
-  }, [userId, apply, persist])
+  }, [userId, refresh])
 
-  /** Drop gutschreiben (nach erledigter Aufgabe): Platte + Coins. */
-  const addDrop = useCallback((plateId: string): boolean => {
-    const plate = getPlate(plateId)
-    if (!plate) return false
+  const addDrop = useCallback(async (weekStart: string, checkId: string, streak: number): Promise<RewardResult> => {
+    if (supabase) {
+      const { data, error: claimError } = await supabase.rpc('claim_check_reward', {
+        p_week: weekStart,
+        p_check: checkId,
+      })
+      if (claimError) throw claimError
+      const result = data as { plate_id?: unknown; granted?: unknown } | null
+      const plate = typeof result?.plate_id === 'string' ? getPlate(result.plate_id) : null
+      if (!plate || typeof result?.granted !== 'boolean') throw new Error('Ungültige Belohnungsantwort vom Server.')
+      await refresh()
+      return { plate, granted: result.granted }
+    }
+    const result = rollDrop(streak)
     const current = stateRef.current
     apply({
       coins: current.coins + COINS_PER_CHECK,
-      inventory: { ...current.inventory, [plateId]: (current.inventory[plateId] ?? 0) + 1 },
+      inventory: { ...current.inventory, [result.plate.id]: (current.inventory[result.plate.id] ?? 0) + 1 },
       synced: false,
     })
-    void persist(stateRef.current)
-    return true
-  }, [apply, persist])
+    return { plate: result.plate, granted: true }
+  }, [apply, refresh])
 
-  /** Coins gutschreiben (z. B. nach Verkauf, Cloud-seitig bereits abgebucht). */
-  const creditCoins = useCallback((amount: number): boolean => {
-    if (!Number.isFinite(amount) || amount <= 0) return false
-    const current = stateRef.current
-    apply({ ...current, coins: current.coins + Math.floor(amount), synced: false })
-    void persist(stateRef.current)
-    return true
-  }, [apply, persist])
-
-  /** Coins lokal abziehen (Kauf). false = zu wenig Coins. */
-  const spendCoins = useCallback((amount: number): boolean => {
-    if (!Number.isFinite(amount) || amount <= 0) return false
-    const current = stateRef.current
-    if (current.coins < amount) return false
-    apply({ ...current, coins: current.coins - Math.floor(amount), synced: false })
-    void persist(stateRef.current)
-    return true
-  }, [apply, persist])
-
-  /** Inventar-Änderung (negativ = abziehen). false, wenn Bestand fehlt. */
-  const adjustInventory = useCallback((plateId: string, delta: number): boolean => {
-    const current = stateRef.current
-    const nextQty = (current.inventory[plateId] ?? 0) + delta
-    if (nextQty < 0) return false
-    const inventory = { ...current.inventory }
-    if (nextQty === 0) delete inventory[plateId]
-    else inventory[plateId] = nextQty
-    apply({ ...current, inventory, synced: false })
-    void persist(stateRef.current)
-    return true
-  }, [apply, persist])
-
-  /**
-   * Upgrade: 3 Platten einer Stufe ( beliebig aus dem Stufen-Pool) →
-   * 1 zufällige Platte der nächsten Stufe. false, wenn nicht genug da sind.
-   */
-  const applyUpgrade = useCallback((rarity: Rarity): boolean => {
+  const applyUpgrade = useCallback(async (rarity: Rarity): Promise<boolean> => {
+    if (supabase) {
+      const { data, error: upgradeError } = await supabase.rpc('upgrade_collection', { p_rarity: rarity })
+      if (upgradeError) {
+        setError(upgradeError.message)
+        return false
+      }
+      if (typeof data !== 'string' || !getPlate(data)) return false
+      await refresh()
+      return true
+    }
     const pool = platesOfRarity(rarity)
     const current = stateRef.current
-    const total = pool.reduce((sum, p) => sum + (current.inventory[p.id] ?? 0), 0)
-    if (total < 3) return false
-
+    const total = pool.reduce((sum, plate) => sum + (current.inventory[plate.id] ?? 0), 0)
+    const target = nextRarity(rarity)
+    if (total < 3 || !target) return false
     const inventory = { ...current.inventory }
     let remaining = 3
-    for (const p of pool) {
-      const take = Math.min(inventory[p.id] ?? 0, remaining)
-      if (take <= 0) continue
-      inventory[p.id] -= take
-      if (inventory[p.id] === 0) delete inventory[p.id]
+    for (const plate of pool) {
+      const take = Math.min(inventory[plate.id] ?? 0, remaining)
+      if (!take) continue
+      inventory[plate.id] -= take
+      if (!inventory[plate.id]) delete inventory[plate.id]
       remaining -= take
-      if (remaining === 0) break
+      if (!remaining) break
     }
-    const target = nextRarity(rarity)
-    if (!target) return false
     const rewardPool = platesOfRarity(target)
     const reward = rewardPool[Math.floor(Math.random() * rewardPool.length)]
     if (!reward) return false
     inventory[reward.id] = (inventory[reward.id] ?? 0) + 1
-
     apply({ ...current, inventory, synced: false })
-    void persist(stateRef.current)
     return true
-  }, [apply, persist])
+  }, [apply, refresh])
 
-  return { state, addDrop, creditCoins, spendCoins, adjustInventory, applyUpgrade, error, setError }
+  return { state, addDrop, applyUpgrade, refresh, error }
 }

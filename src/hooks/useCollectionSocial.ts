@@ -15,69 +15,111 @@ export interface Friend {
   name: string
 }
 
+export interface FriendRequest {
+  id: string
+  fromUserId: string
+  toUserId: string
+  createdAt: string
+}
+
 /**
  * Freundesliste. Mit Supabase aus `friends` gelesen (akzeptierte Beziehungen,
  * Namen über Profile). Ohne: drei Demo-Freunde (Namen statisch, Inventar leer).
  */
-export function useFriends(userId: string): { friends: Friend[]; loading: boolean; error: string | null } {
+export function useFriends(userId: string): {
+  friends: Friend[]
+  requests: FriendRequest[]
+  loading: boolean
+  error: string | null
+  sendRequest: (toUserId: string) => Promise<void>
+  respondRequest: (requestId: string, accept: boolean) => Promise<void>
+  reload: () => Promise<void>
+} {
   const [friends, setFriends] = useState<Friend[]>([])
+  const [requests, setRequests] = useState<FriendRequest[]>([])
   const [loading, setLoading] = useState(Boolean(supabase))
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!supabase) {
       setFriends([
         { id: 'demo-friend-1', name: 'Max (Demo)' },
         { id: 'demo-friend-2', name: 'Lena (Demo)' },
         { id: 'demo-friend-3', name: 'Tobi (Demo)' },
       ])
+      setRequests([])
       setLoading(false)
       return
     }
-    let active = true
-    void (async () => {
-      try {
-        const { data, error: queryError } = await supabase!
-          .from('friends')
-          .select('user_id_a,user_id_b')
-          .or(`user_id_a.eq.${userId},user_id_b.eq.${userId}`)
-        if (!active) return
-        if (queryError) throw queryError
-        const otherIds = ((data ?? []) as { user_id_a: string; user_id_b: string }[])
-          .map((row) => (row.user_id_a === userId ? row.user_id_b : row.user_id_a))
-        if (otherIds.length === 0) {
-          setFriends([])
-          return
-        }
-        // Namen über die Profil-Tabelle ergänzen; sonst E-Mail-Kürzel.
-        const { data: profiles } = await supabase!
-          .from('user_profiles')
-          .select('user_id,profile_data')
-          .in('user_id', otherIds)
-        if (!active) return
-        setFriends(otherIds.map((id) => {
-          const profile = ((profiles ?? []) as { user_id: string; profile_data: unknown }[])
-            .find((p) => p.user_id === id)
-          const pd = profile?.profile_data as Record<string, unknown> | null
-          const name = typeof pd?.['displayName'] === 'string' && pd['displayName'].length > 0
-            ? pd['displayName'] as string
-            : `Nutzer ${id.slice(0, 6)}`
-          return { id, name }
-        }))
+    setLoading(true)
+    try {
+      const { data, error: queryError } = await supabase
+        .from('friends')
+        .select('id,user_id_a,user_id_b,requested_by,status,created_at')
+        .or(`user_id_a.eq.${userId},user_id_b.eq.${userId}`)
+      if (queryError) throw queryError
+      const rows = (data ?? []) as { id: string; user_id_a: string; user_id_b: string; requested_by: string; status: string; created_at: string }[]
+      const accepted = rows.filter((row) => row.status === 'accepted')
+      setRequests(rows.filter((row) => row.status === 'pending' && row.requested_by !== userId)
+        .map((row) => ({ id: row.id, fromUserId: row.requested_by, toUserId: userId, createdAt: row.created_at })))
+      const otherIds = accepted.map((row) => (row.user_id_a === userId ? row.user_id_b : row.user_id_a))
+      if (otherIds.length === 0) {
+        setFriends([])
         setError(null)
-      } catch (cause) {
-        if (!active) return
-        setError(cause instanceof Error ? cause.message : 'Freundesliste konnte nicht geladen werden.')
-      } finally {
-        if (active) setLoading(false)
+        return
       }
-    })()
-    return () => {
-      active = false
+      const { data: profiles, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('user_id,profile_data')
+        .in('user_id', otherIds)
+      if (profileError) throw profileError
+      setFriends(otherIds.map((id) => {
+        const profile = ((profiles ?? []) as { user_id: string; profile_data: unknown }[])
+          .find((item) => item.user_id === id)
+        const data = profile?.profile_data as Record<string, unknown> | null
+        const name = typeof data?.['displayName'] === 'string' && data['displayName'].length > 0
+          ? data['displayName'] as string
+          : `Nutzer ${id.slice(0, 6)}`
+        return { id, name }
+      }))
+      setError(null)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Freundesliste konnte nicht geladen werden.')
+    } finally {
+      setLoading(false)
     }
   }, [userId])
 
-  return { friends, loading, error }
+  useEffect(() => { void load() }, [load])
+
+  // Live-Updates: eingehende Anfragen/Antworten des Partners ohne Reload.
+  useEffect(() => {
+    if (!supabase) return
+    const channel = supabase
+      .channel(`friends:${userId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'friends' }, () => { void load() })
+      .subscribe()
+    return () => { void supabase?.removeChannel(channel) }
+  }, [userId, load])
+
+  const sendRequest = useCallback(async (toUserId: string) => {
+    if (!supabase) throw new Error('Freundschaftsanfragen benötigen die Cloud.')
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(toUserId)) {
+      throw new Error('Bitte eine gültige Nutzer-UUID eingeben.')
+    }
+    const { error: rpcError } = await supabase.rpc('send_friend_request', { p_to: toUserId })
+    if (rpcError) throw rpcError
+    await load()
+  }, [load])
+
+  const respondRequest = useCallback(async (requestId: string, accept: boolean) => {
+    if (!supabase) throw new Error('Freundschaftsanfragen benötigen die Cloud.')
+    const { error: rpcError } = await supabase.rpc('respond_friend_request', { p_friend: requestId, p_accept: accept })
+    if (rpcError) throw rpcError
+    await load()
+  }, [load])
+
+  return { friends, requests, loading, error, sendRequest, respondRequest, reload: load }
 }
 
 // ------------------------------------------------------------------ Trades
@@ -156,6 +198,16 @@ export function useTrades(userId: string, friends: Friend[]) {
     void load()
   }, [load, friendIds])
 
+  // Live-Updates: Trade-Antworten des Partners erscheinen ohne Reload.
+  useEffect(() => {
+    if (!supabase) return
+    const channel = supabase
+      .channel(`trades:${userId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'trades' }, () => { void load() })
+      .subscribe()
+    return () => { void supabase?.removeChannel(channel) }
+  }, [userId, load])
+
   /** Cooldown-Prüfung + eigener Trade-Call (Cloud-seitig atomar via RPC). */
   const createTrade = useCallback(async (
     toUserId: string,
@@ -177,19 +229,9 @@ export function useTrades(userId: string, friends: Friend[]) {
     validate(requested)
 
     if (!supabase) {
-      // Demo-Modus: Trade nur lokal simulieren (bleibt pending, nicht ausführbar).
-      lastTradeAt.current = Date.now()
-      const demoId = `demo-${Date.now()}`
-      setTrades((previous) => [{
-        id: demoId,
-        fromUserId: userId,
-        toUserId,
-        offered,
-        requested,
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-      }, ...previous])
-      return demoId
+      // Demo-Modus: kein toter Pending-Eintrag — ohne Cloud ist kein
+      // Partner-Loop (Annehmen/Zurückziehen) möglich, also ehrlich ablehnen.
+      throw new Error('Tauschen braucht die Cloud (Demo-Modus: nur Ansehen).')
     }
 
     const { data, error: rpcError } = await supabase!.rpc('create_trade', {
@@ -266,6 +308,7 @@ export interface MarketTransaction {
 
 export function useMarket(userId: string, friends: Friend[]) {
   const [listings, setListings] = useState<MarketListing[]>([])
+  const [ownListings, setOwnListings] = useState<MarketListing[]>([])
   const [transactions, setTransactions] = useState<MarketTransaction[]>([])
   const [loading, setLoading] = useState(Boolean(supabase))
   const [error, setError] = useState<string | null>(null)
@@ -274,6 +317,7 @@ export function useMarket(userId: string, friends: Friend[]) {
   const load = useCallback(async () => {
     if (!supabase) {
       setListings([])
+      setOwnListings([])
       setTransactions([])
       setLoading(false)
       return
@@ -312,6 +356,26 @@ export function useMarket(userId: string, friends: Friend[]) {
         createdAt: row.created_at,
       })))
 
+      // Eigene aktive Angebote — sonst bleibt eine eingestellte Platte ohne
+      // Rückweg im Listing-Zustand gefangen (Reservierung ohne Abbrechen).
+      const { data: ownRows, error: ownError } = await supabase!
+        .from('market_listings')
+        .select('id,seller_id,plate_id,price,status,created_at')
+        .eq('seller_id', userId)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(50)
+      if (ownError) throw ownError
+      setOwnListings(((ownRows ?? []) as { id: string; seller_id: string; plate_id: string; price: number; status: 'active' | 'sold' | 'removed'; created_at: string }[]).map((row) => ({
+        id: row.id,
+        sellerId: row.seller_id,
+        sellerName: 'Du',
+        plateId: row.plate_id,
+        price: row.price,
+        status: row.status,
+        createdAt: row.created_at,
+      })))
+
       // Eigene Transaktionen (als Käufer oder Verkäufer).
       const { data: txRows, error: txError } = await supabase!
         .from('market_transactions')
@@ -342,6 +406,16 @@ export function useMarket(userId: string, friends: Friend[]) {
     void load()
   }, [load, friendIds])
 
+  // Live-Updates: neue/verkaufte Angebote des Marktplatzes ohne Reload.
+  useEffect(() => {
+    if (!supabase) return
+    const channel = supabase
+      .channel(`market:${userId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'market_listings' }, () => { void load() })
+      .subscribe()
+    return () => { void supabase?.removeChannel(channel) }
+  }, [userId, load])
+
   /** Eigene Platte zum Verkauf anbieten (Cloud prüft Bestand + Mindestpreis). */
   const createListing = useCallback(async (plateId: string, price: number): Promise<void> => {
     const plate = getPlate(plateId)
@@ -366,7 +440,15 @@ export function useMarket(userId: string, friends: Friend[]) {
     void load()
   }, [load])
 
-  return { listings, transactions, loading, error, createListing, buyListing, reload: load }
+  /** Eigenes aktives Angebot zurückziehen — Platte geht zurück ins Inventar. */
+  const cancelListing = useCallback(async (listingId: string): Promise<void> => {
+    if (!supabase) throw new Error('Angebote zurückziehen braucht die Cloud (Demo-Modus: nur Ansehen).')
+    const { error: rpcError } = await supabase!.rpc('cancel_listing', { p_listing: listingId })
+    if (rpcError) throw rpcError
+    void load()
+  }, [load])
+
+  return { listings, ownListings, transactions, loading, error, createListing, buyListing, cancelListing, reload: load }
 }
 
 /** Demo-Preisrichtwert je Stufe für die UI-Anzeige (falls keine Cloud). */

@@ -68,10 +68,10 @@ export const PLATES: Plate[] = [
   { id: 'bp-20', name: 'Bumper 20 kg (Signalrot)', weightKg: 20, rarity: 'rare', image: '/plates/bp-20.png', description: 'Signalfarben und wettkampftauglich. Jeder will ihn sehen.' },
   // Epic — Spezial-Designs
   { id: 'carbon-25', name: 'Carbon 25 kg', weightKg: 25, rarity: 'epic', image: '/plates/carbon-25.png', description: 'Carbon-Look, Innenleben Geheimnis. Schwerer als das Gesetz erlaubt.' },
-  { id: 'chrom-10', name: 'Chrom 10 kg', weightKg: 10, rarity: 'epic', image: '/plates/chrom-10.png', description: 'Vollmetall in Grau mit Spiegelfinish. Blitzt in jeder Regalreihe.' },
+  { id: 'glow-25', name: 'Chrom 10 kg', weightKg: 10, rarity: 'epic', image: '/plates/chrom-10.png', description: 'Vollmetall in Grau mit Spiegelfinish. Blitzt in jeder Regalreihe.' },
   // Legendary — farbige Sondereditionen
-  { id: 'amethyst-5', name: 'Amethyst 5 kg', weightKg: 5, rarity: 'legendary', image: '/plates/amethyst-5.png', description: 'Edelstein-Edition in Violett. Leicht im Gewicht, unbezahlbar im Wert.' },
-  { id: 'glut-2-5', name: 'Glut 2,5 kg', weightKg: 2.5, rarity: 'legendary', image: '/plates/glut-2-5.png', description: 'Glühendes Orange — als käme sie frisch aus der Schmiede. Kult.' },
+  { id: 'gold-50', name: 'Amethyst 5 kg', weightKg: 5, rarity: 'legendary', image: '/plates/amethyst-5.png', description: 'Edelstein-Edition in Violett. Leicht im Gewicht, unbezahlbar im Wert.' },
+  { id: 'edition-50', name: 'Glut 2,5 kg', weightKg: 2.5, rarity: 'legendary', image: '/plates/glut-2-5.png', description: 'Glühendes Orange — als käme sie frisch aus der Schmiede. Kult.' },
 ]
 
 const PLATE_BY_ID = new Map(PLATES.map((p) => [p.id, p]))

@@ -21,7 +21,7 @@ const UPGRADE_COST = 3
 export default function CollectionView({ userId, state, onUpgrade }: {
   userId: string
   state: CollectionState
-  onUpgrade: (rarity: Rarity) => boolean
+  onUpgrade: (rarity: Rarity) => boolean | Promise<boolean>
 }) {
   const [sim, setSim] = useState<ReturnType<typeof simulateDrops> | null>(null)
   const [simStreak, setSimStreak] = useState(0)
