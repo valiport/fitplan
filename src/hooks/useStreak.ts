@@ -3,7 +3,7 @@
 // heutige Tag darf offen sein, damit man den Streak tagsüber nicht verliert.
 
 import { addDays, startOfWeek, toISODate } from '../domain/dates'
-import type { DayPlan } from '../domain/types'
+import type { DayPlan, WeekPlan } from '../domain/types'
 
 /** Abhakbare IDs eines Tages (Training + Mahlzeiten), konsistent mit DayView. */
 export function dayCheckIds(dayIndex: number, day: DayPlan): string[] {
@@ -79,4 +79,34 @@ export function computeStreak(
     streak++
   }
   return { streak, days }
+}
+
+export interface WeekStats {
+  /** Geplante Trainingstage (kind !== 'rest'). */
+  totalWorkouts: number
+  /** Abgehakte Trainingstage in dieser Woche. */
+  doneWorkouts: number
+  /** doneWorkouts / totalWorkouts in Prozent (0–100, ganzzahlig). */
+  successRate: number
+  /** Über die Woche geplante Kalorien (alle Tage). */
+  weekKcal: number
+}
+
+/** Wochenstatistik (Pro): Erfolgsquote der Trainings + geplante Kalorien. */
+export function computeWeekStats(plan: WeekPlan, isChecked: (checkId: string) => boolean): WeekStats {
+  let totalWorkouts = 0
+  let doneWorkouts = 0
+  let weekKcal = 0
+  plan.days.forEach((day, i) => {
+    weekKcal += day.kcal
+    if (day.kind === 'rest') return
+    totalWorkouts++
+    if (isChecked(`d${i}-workout-0`)) doneWorkouts++
+  })
+  return {
+    totalWorkouts,
+    doneWorkouts,
+    successRate: totalWorkouts === 0 ? 0 : Math.round((doneWorkouts / totalWorkouts) * 100),
+    weekKcal,
+  }
 }

@@ -9,7 +9,7 @@ import Onboarding from './components/Onboarding'
 import Planner from './components/Planner'
 import { XpButton, XpWindow } from './components/ui'
 import { useCloudProfile } from './hooks/useCloudProfile'
-import { usePro } from './hooks/usePro'
+import { usePro, type BillingInterval } from './hooks/usePro'
 import { useEquipment } from './hooks/useEquipment'
 import { useSyncedChecks } from './hooks/useSyncedChecks'
 import { useWorkoutOverrides } from './hooks/useWorkoutOverrides'
@@ -57,7 +57,7 @@ function PlannerScreen({ profile, userId, onReset, isPro, onUpgrade, onResetPro 
   userId: string
   onReset: () => void
   isPro: boolean
-  onUpgrade: () => void
+  onUpgrade: (plan: BillingInterval) => void
   onResetPro: () => void
 }) {
   const [weekOffset, setWeekOffset] = useState(0) // 0 = diese Woche
@@ -149,6 +149,11 @@ function SignedInApp({ userId }: { userId: string }) {
     setSavingProfile(false)
   }
   const { isPro, upgrade, reset } = usePro()
+  const handleUpgrade = (plan: BillingInterval) => {
+    void upgrade(plan).catch((err: unknown) => {
+      console.error('Pro-Upgrade fehlgeschlagen:', err)
+    })
+  }
 
   if (loading) return <XpWindow title="Profil wird synchronisiert" icon="☁"><p className="text-[12px] text-[#a9c4be]">Bitte warten …</p></XpWindow>
   if (!ready) return <DesktopFrame windowTitle="FitPlan – Cloud-Synchronisierung">
@@ -160,7 +165,7 @@ function SignedInApp({ userId }: { userId: string }) {
   return <>
     {error && <p role="alert" className="max-w-md rounded-[14px] border border-[#ff9b92]/30 bg-[#331514]/80 p-2 text-[11px] text-[#ff9b92] shadow-[0_2px_10px_rgba(31,45,71,0.12)]">{error}</p>}
     {profile
-      ? <PlannerScreen profile={profile} userId={userId} onReset={() => { void clear() }} isPro={isPro} onUpgrade={upgrade} onResetPro={reset} />
+      ? <PlannerScreen profile={profile} userId={userId} onReset={() => { void clear() }} isPro={isPro} onUpgrade={handleUpgrade} onResetPro={reset} />
       : savingProfile
         ? <XpWindow title="Profil wird synchronisiert" icon="☁"><p className="text-[12px] text-[#a9c4be]">Profil wird sicher gespeichert …</p></XpWindow>
         : <OnboardingScreen onDone={(next) => { void saveProfile(next) }} />}

@@ -1,6 +1,15 @@
 [build]
   command = "npm run build"
   publish = "dist"
+  functions = "netlify/functions"
+
+# Stripe-Functions sind zusätzlich unter /api/… erreichbar
+# (export const config = { path: … } in den .mts-Dateien).
+# Benötigte Environment-Variablen (Netlify Dashboard, NICHT ins Repo):
+#   STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET,
+#   STRIPE_PRICE_MONTHLY, STRIPE_PRICE_YEARLY,
+#   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+# Öffentliche Preis-IDs fürs Frontend (Vite): VITE_STRIPE_PRICE_MONTHLY/YEARLY.
 
 [[redirects]]
   from = "/*"

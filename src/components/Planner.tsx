@@ -8,6 +8,8 @@ import DayView from './DayView'
 import ShoppingList from './ShoppingList'
 import ProgressPanel from './ProgressPanel'
 import Paywall from './Paywall'
+import type { BillingInterval } from '../hooks/usePro'
+import { downloadWeekICS } from '../domain/ics'
 import { XpButton, XpGroupBox, XpProgress, XpTitleBar, XpTitleButton } from './ui'
 import { addDays, formatKcal, WEEKDAY_LABELS } from '../domain/dates'
 import { sportLabel } from '../domain/training'
@@ -143,7 +145,7 @@ export default function Planner({
   weekOffset: number
   onWeekShift: (delta: number | 0) => void
   isPro: boolean
-  onUpgrade: () => void
+  onUpgrade: (plan: BillingInterval) => void
   onResetPro: () => void
   onResetProfile: () => void
   onReroll: () => void
@@ -190,12 +192,12 @@ export default function Planner({
             <>
               <XpTitleButton
                 label={isPro ? 'Meine Geräte' : 'Geräte (Pro-Feature)'}
-                onClick={() => (isPro ? setShowEquipment(true) : onUpgrade())}
+                onClick={() => (isPro ? setShowEquipment(true) : onUpgrade('yearly'))}
               />
               {isPro ? (
                 <XpTitleButton label="Pro-Status zurücksetzen (Demo)" onClick={onResetPro} />
               ) : (
-                <XpTitleButton label="Pro holen" onClick={onUpgrade} />
+                <XpTitleButton label="Pro holen" onClick={() => onUpgrade('yearly')} />
               )}
               <XpTitleButton label="Profil neu einrichten" danger onClick={onResetProfile} />
             </>
@@ -295,11 +297,16 @@ export default function Planner({
               </div>
 
               {isPro ? (
-                <XpButton className="mt-2 w-full" onClick={onReroll}>
-                  🎲 Plan neu würfeln
-                </XpButton>
+                <>
+                  <XpButton className="mt-2 w-full" onClick={onReroll}>
+                    🎲 Plan neu würfeln
+                  </XpButton>
+                  <XpButton className="mt-1.5 w-full" onClick={() => downloadWeekICS(plan)}>
+                    📅 Trainingswoche in Kalender exportieren
+                  </XpButton>
+                </>
               ) : (
-                <XpButton className="mt-2 w-full" variant="primary" onClick={onUpgrade}>
+                <XpButton className="mt-2 w-full" variant="primary" onClick={() => onUpgrade('yearly')}>
                   🎲 Plan neu würfeln – Pro freischalten
                 </XpButton>
               )}
@@ -309,7 +316,14 @@ export default function Planner({
           {tab === 'shopping' && <ShoppingList plan={plan} checked={checked} />}
 
           {tab === 'progress' && (
-            <ProgressPanel profile={profile} entries={weightEntries} onAdd={onAddWeight} isPro={isPro} />
+            <ProgressPanel
+              profile={profile}
+              plan={plan}
+              checked={checked}
+              entries={weightEntries}
+              onAdd={onAddWeight}
+              isPro={isPro}
+            />
           )}
         </div>
       </div>
