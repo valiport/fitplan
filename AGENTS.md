@@ -17,6 +17,8 @@ Non-obvious learnings for future sessions in this repo. Terse by design.
 - Project root path contains spaces and umlauts (`Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files`) — always quote absolute paths in shell commands.
 - Incognito preview tabs discard localStorage (no `sb-*` keys ever persist; the auth session can vanish WITHOUT a reload — onAuthStateChange fires null). Cross-tab sync tests need a second non-incognito tab: those share the persisted session and storage.
 - After a Freebuff restart the dev server is gone; re-run the detached-start recipe from the run doc and re-register the preview (the run doc's "Aktueller Stand" section records the last verified PID/URL).
+- `sql-server.log` (project root, written by some local MCP/sql process) can be HARD-LOCKED by a running process: `rm`/`mv` fail with "Device or resource busy", which breaks any git operation that must touch the working tree (rebase checkout, normal merges). Workarounds: `git merge -s ours` (tree-only, no checkout) or free the owning process first. Don't try to delete it while locked.
+- A GitHub **web upload** ("Add files via upload", commit 06faf94) once overwrote the repo with CRLF-mangled files AND committed `.env.local`/`vite-dev.log`/`sql-server.log` (that `.env.local` only held public anon values — no real secret). Resolution: `git merge -s ours` kept our tree and history (1dcae6e), junk files stay untracked via `.gitignore`. Watch for future web uploads bypassing the ignore rules; never rely on history rewrite without asking.
 
 ## Testing the live preview
 - `preview_navigate` with `to: "reload"` usually reports "no load event observed within 15s" even on success — misleading; just snapshot afterwards.
