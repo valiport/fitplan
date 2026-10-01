@@ -29,6 +29,7 @@ Non-obvious learnings for future sessions in this repo. Terse by design.
 
 ## Collection (Belohnungssystem)
 - Entitlement/Wallet lives in `useCollection.ts` (coins + inventory, localStorage `fitplan.collection.v1` with Supabase `collections` upsert fallback). Drop logic: `domain/drops.ts` (60/25/10/4/1 weights, streak luck multiplier), catalog: `domain/plates.ts` (10 plates, 5 rarities).
+- Plate art: real PNGs in `public/plates/<id>.png` (128px, transparent, cut from a reference photo via flood-fill + alpha erosion). `Plate.icon` was replaced by `Plate.image` (path); rarity glow comes from `RARITY_STYLES` around the img. Keep plate IDs stable — they are stored in inventories/trades/DB.
 - Drop trigger lives ONLY in `Planner.tsx` reward effect: first non-loading check snapshot marks existing checks as seen (NO reward — prevents reload farming); only newly added check ids roll a drop. Never move this before `syncLoading` guard.
 - SQL for friends/trades/market lives in `supabase/collection-setup.sql` (separate file, NOT in setup.sql — deploy via dashboard SQL editor). Until deployed, UI degrades gracefully to local demo mode (trades show error alert, market empty).
 - sticky `.glass-taskbar` covers viewport-bottom buttons in tests: scroll target to mid-viewport before clicking, or `el.click()` via evaluate.

@@ -51,26 +51,27 @@ export interface Plate {
   name: string
   weightKg: number
   rarity: Rarity
-  icon: string
+  /** PNG unter public/plates/ (echtes Plattenfoto, transparenter BG). */
+  image: string
   description: string
 }
 
 export const PLATES: Plate[] = [
-  // Common — graue Gussplatten
-  { id: 'cp-125', name: 'Gussplatte 1,25 kg', weightKg: 1.25, rarity: 'common', icon: '⚪', description: 'Der zuverlässige Einstieg — klein, grau, immer in der Tasche.' },
-  { id: 'cp-25', name: 'Gussplatte 2,5 kg', weightKg: 2.5, rarity: 'common', icon: '⚫', description: 'Solides Gusseisen. Nicht glamourös, aber immer dienstbereit.' },
-  // Uncommon — Gummiplatten
-  { id: 'gp-5', name: 'Gummiplatte 5 kg', weightKg: 5, rarity: 'uncommon', icon: '🟢', description: 'Bodenfreundlich und leise. Der Star jedes Heim-Studios.' },
-  { id: 'gp-10', name: 'Gummiplatte 10 kg', weightKg: 10, rarity: 'uncommon', icon: '🟩', description: 'Standardfarbe, standardmäßig gut. Klemmt an keiner Hantel.' },
+  // Common — schwarze Gussplatten
+  { id: 'cp-125', name: 'Gussplatte 1,25 kg', weightKg: 1.25, rarity: 'common', image: '/plates/cp-125.png', description: 'Der zuverlässige Einstieg — klein, schwarz, immer in der Tasche.' },
+  { id: 'cp-25', name: 'Gussplatte 2,5 kg', weightKg: 2.5, rarity: 'common', image: '/plates/cp-25.png', description: 'Solides Gusseisen. Nicht glamourös, aber immer dienstbereit.' },
+  // Uncommon — Gummiplatten in Standardfarben
+  { id: 'gp-5', name: 'Gummiplatte 5 kg (Grün)', weightKg: 5, rarity: 'uncommon', image: '/plates/gp-5.png', description: 'Bodenfreundlich und leise. Der Star jedes Heim-Studios.' },
+  { id: 'gp-10', name: 'Gummiplatte 10 kg (Gelb)', weightKg: 10, rarity: 'uncommon', image: '/plates/gp-10.png', description: 'Griffig durch den Ausschnitt — der Allrounder für jeden Tag.' },
   // Rare — Bumper in Signalfarben
-  { id: 'bp-15', name: 'Bumper 15 kg (Signalblau)', weightKg: 15, rarity: 'rare', icon: '🔵', description: 'Turnhallen-Klassiker. Wird beim Fallen denkbar laut — egal.' },
-  { id: 'bp-20', name: 'Bumper 20 kg (Signalrot)', weightKg: 20, rarity: 'rare', icon: '🔴', description: 'Signalfarben und wettkampftauglich. Jeder will ihn sehen.' },
+  { id: 'bp-15', name: 'Bumper 15 kg (Signalblau)', weightKg: 15, rarity: 'rare', image: '/plates/bp-15.png', description: 'Turnhallen-Klassiker. Wird beim Fallen denkbar laut — egal.' },
+  { id: 'bp-20', name: 'Bumper 20 kg (Signalrot)', weightKg: 20, rarity: 'rare', image: '/plates/bp-20.png', description: 'Signalfarben und wettkampftauglich. Jeder will ihn sehen.' },
   // Epic — Spezial-Designs
-  { id: 'carbon-25', name: 'Carbon 25 kg', weightKg: 25, rarity: 'epic', icon: '⬛', description: 'Carbon-Look, Innenleben Geheimnis. Schwerer als das Gesetz erlaubt.' },
-  { id: 'glow-25', name: 'Glow 25 kg', weightKg: 25, rarity: 'epic', icon: '🟣', description: 'Leuchtet im Dunkeln. Grund, nachts weiterzutrainieren.' },
-  // Legendary
-  { id: 'gold-50', name: 'Goldplatte 50 kg', weightKg: 50, rarity: 'legendary', icon: '🟡', description: 'Limitiertes Gold. Zwei Hände, ein Traum,nullen auf der Waage.' },
-  { id: 'edition-50', name: 'Jubiläums-Platte 50 kg', weightKg: 50, rarity: 'legendary', icon: '🏅', description: 'Sonderedition mit Gravur. Es gab sie nur einmal. Bis jetzt.' },
+  { id: 'carbon-25', name: 'Carbon 25 kg', weightKg: 25, rarity: 'epic', image: '/plates/carbon-25.png', description: 'Carbon-Look, Innenleben Geheimnis. Schwerer als das Gesetz erlaubt.' },
+  { id: 'chrom-10', name: 'Chrom 10 kg', weightKg: 10, rarity: 'epic', image: '/plates/chrom-10.png', description: 'Vollmetall in Grau mit Spiegelfinish. Blitzt in jeder Regalreihe.' },
+  // Legendary — farbige Sondereditionen
+  { id: 'amethyst-5', name: 'Amethyst 5 kg', weightKg: 5, rarity: 'legendary', image: '/plates/amethyst-5.png', description: 'Edelstein-Edition in Violett. Leicht im Gewicht, unbezahlbar im Wert.' },
+  { id: 'glut-2-5', name: 'Glut 2,5 kg', weightKg: 2.5, rarity: 'legendary', image: '/plates/glut-2-5.png', description: 'Glühendes Orange — als käme sie frisch aus der Schmiede. Kult.' },
 ]
 
 const PLATE_BY_ID = new Map(PLATES.map((p) => [p.id, p]))

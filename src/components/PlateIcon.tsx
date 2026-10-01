@@ -1,25 +1,32 @@
-// Kleine Sammlungs-Bausteine: Platten-Icon mit Seltenheits-Rahmen
-// und Seltenheits-Badge. Farben kommen aus RARITY_STYLES.
+// Kleine Sammlungs-Bausteine: Platten-Icon (echtes PNG) mit
+// Seltenheits-Glow und Seltenheits-Badge. Farben kommen aus RARITY_STYLES.
 
 import { RARITY_LABELS, RARITY_STYLES, formatWeight, type Plate } from '../domain/plates'
 
-/** Platten-Icon im Glas-Stil mit Glow je Seltenheit. */
+/** Platten-Icon: PNG-Foto mit Glow-Schimmer je Seltenheit. */
 export function PlateIcon({ plate, size = 40 }: { plate: Plate; size?: number }) {
   const style = RARITY_STYLES[plate.rarity]
   return (
     <span
       aria-hidden
-      className="flex shrink-0 items-center justify-center rounded-full"
+      className="relative flex shrink-0 items-center justify-center rounded-full"
       style={{
         width: size,
         height: size,
-        fontSize: size * 0.5,
-        background: `radial-gradient(circle at 30% 25%, ${style.bg}, rgba(4,12,11,0.9))`,
-        border: `1.5px solid ${style.border}`,
-        boxShadow: `0 0 ${size / 3}px ${style.glow}, inset 0 1px 2px rgba(255,255,255,0.25)`,
+        background: `radial-gradient(circle at 50% 45%, ${style.glow}, transparent 72%)`,
       }}
     >
-      {plate.icon}
+      <img
+        src={plate.image}
+        alt=""
+        draggable={false}
+        style={{
+          width: size * 0.92,
+          height: size * 0.92,
+          objectFit: 'contain',
+          filter: `drop-shadow(0 0 ${Math.max(3, size / 10)}px ${style.glow})`,
+        }}
+      />
     </span>
   )
 }
