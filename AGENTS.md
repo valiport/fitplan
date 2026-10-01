@@ -27,6 +27,12 @@ Non-obvious learnings for future sessions in this repo. Terse by design.
 - `preview_evaluate` has a ~10 s limit and runs in an ISOLATED JS world: its `import('/src/…')` resolves a module URL without the `?t=` HMR param, i.e. a *second* module instance (a second Supabase client reports `getChannels() === []` while the app's channels are live). Read app state from the DOM instead (e.g. `documentElement.dataset` markers written by an injected main-world script).
 - Titlebar buttons (`XpTitleButton`) render `—`/`✕` as visible content; the real label is an aria-label that appears only in snapshot accessible names — never match them via `innerText`.
 
+## Collection (Belohnungssystem)
+- Entitlement/Wallet lives in `useCollection.ts` (coins + inventory, localStorage `fitplan.collection.v1` with Supabase `collections` upsert fallback). Drop logic: `domain/drops.ts` (60/25/10/4/1 weights, streak luck multiplier), catalog: `domain/plates.ts` (10 plates, 5 rarities).
+- Drop trigger lives ONLY in `Planner.tsx` reward effect: first non-loading check snapshot marks existing checks as seen (NO reward — prevents reload farming); only newly added check ids roll a drop. Never move this before `syncLoading` guard.
+- SQL for friends/trades/market lives in `supabase/collection-setup.sql` (separate file, NOT in setup.sql — deploy via dashboard SQL editor). Until deployed, UI degrades gracefully to local demo mode (trades show error alert, market empty).
+- sticky `.glass-taskbar` covers viewport-bottom buttons in tests: scroll target to mid-viewport before clicking, or `el.click()` via evaluate.
+
 ## Architecture couplings & constraints
 - Cloud backend is LIVE: Supabase project `nekbtgufqysaodahknmv` (keys in git-ignored `.env.local`; `.env.example` must stay placeholder-only). Test account `buffy.test@web.de`. `supabase/setup.sql` is idempotent and must be re-run from the dashboard if tables are missing (app then shows the profile-retry screen instead of data).
 - Design is now dark teal "Liquid Chrome" (user's reference image): tokens in `index.css` `:root`, `.glass-*` classes; primitives keep XP names in `ui.tsx` (XpWindow, XpButton…) as compat aliases. The chrome rim needs BOTH `border: 1px solid transparent` and the `… padding-box, var(--chrome) border-box` double background — drop either and the rim vanishes. Old XP bevel colors (#ece9d8/#003399/#808080) are long gone.
@@ -52,6 +58,12 @@ Non-obvious learnings for future sessions in this repo. Terse by design.
 - `write_doc` is unavailable in this environment despite being listed as a tool; use `write_file` for new files. Shell redirection can also be refused while the client reports plan mode, even when `exit_plan` reports the opposite.
 - In `run_terminal_command`, bash eats `$var` inside double-quoted powershell -Command strings; use single quotes around the whole -Command and double quotes inside, or avoid variables.
 - Supabase dashboard storage list API: `object/list` returns folders as bare names (no items); recurse per prefix. Object `sign` + fetch works; HEAD on signed URLs returns 400 (use GET).
+
+## Collection (Belohnungssystem)
+- Entitlement/Wallet lives in `useCollection.ts` (coins + inventory, localStorage `fitplan.collection.v1` with Supabase `collections` upsert fallback). Drop logic: `domain/drops.ts` (60/25/10/4/1 weights, streak luck multiplier), catalog: `domain/plates.ts` (10 plates, 5 rarities).
+- Drop trigger lives ONLY in `Planner.tsx` reward effect: first non-loading check snapshot marks existing checks as seen (NO reward — prevents reload farming); only newly added check ids roll a drop. Never move this before `syncLoading` guard.
+- SQL for friends/trades/market lives in `supabase/collection-setup.sql` (separate file, NOT in setup.sql — deploy via dashboard SQL editor). Until deployed, UI degrades gracefully to local demo mode (trades show error alert, market empty).
+- sticky `.glass-taskbar` covers viewport-bottom buttons in tests: scroll target to mid-viewport before clicking, or `el.click()` via evaluate.
 
 ## Architecture couplings
 - A user-selectable workout must stay aligned across `training.ts` (option pools and supplements), `weekPlan.ts` (override validation/application), `DayView.tsx` (selector), `App.tsx` (memo dependencies and callbacks), and a sport-scoped localStorage hook; changing only the UI does not change the generated plan.

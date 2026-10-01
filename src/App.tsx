@@ -10,6 +10,8 @@ import Planner from './components/Planner'
 import { XpButton, XpWindow } from './components/ui'
 import { useCloudProfile } from './hooks/useCloudProfile'
 import { usePro, type BillingInterval } from './hooks/usePro'
+import { useCollection } from './hooks/useCollection'
+import { useFriends, useTrades, useMarket } from './hooks/useCollectionSocial'
 import { useEquipment } from './hooks/useEquipment'
 import { useSyncedChecks } from './hooks/useSyncedChecks'
 import { useWorkoutOverrides } from './hooks/useWorkoutOverrides'
@@ -60,6 +62,10 @@ function PlannerScreen({ profile, userId, onReset, isPro, onUpgrade, onResetPro 
   onUpgrade: (plan: BillingInterval) => void
   onResetPro: () => void
 }) {
+  const collectionHook = useCollection(userId)
+  const friendsHook = useFriends(userId)
+  const tradesHook = useTrades(userId, friendsHook.friends)
+  const marketHook = useMarket(userId, friendsHook.friends)
   const [weekOffset, setWeekOffset] = useState(0) // 0 = diese Woche
   const [rerollsByWeek, setRerollsByWeek] = useState<Record<string, number>>({})
   const { equipment, toggle: toggleEquipment, error: equipmentError } = useEquipment(userId, profile.sport)
@@ -92,6 +98,7 @@ function PlannerScreen({ profile, userId, onReset, isPro, onUpgrade, onResetPro 
     <DesktopFrame windowTitle={`FitPlan – ${sportLabel(profile.sport)}`}>
       <Planner
         profile={profile}
+        userId={userId}
         plan={plan}
         weekStartISO={weekStartISO}
         checked={checked}
@@ -122,6 +129,17 @@ function PlannerScreen({ profile, userId, onReset, isPro, onUpgrade, onResetPro 
         onToggleEquipment={toggleEquipment}
         workoutOverrides={overrides}
         onOverride={(dayIndex, main) => changeHandler(dayIndex, main)}
+        collection={collectionHook.state}
+        collectionApi={{
+          addDrop: collectionHook.addDrop,
+          applyUpgrade: collectionHook.applyUpgrade,
+          creditCoins: collectionHook.creditCoins,
+          spendCoins: collectionHook.spendCoins,
+          adjustInventory: collectionHook.adjustInventory,
+        }}
+        friends={friendsHook.friends}
+        tradesApi={tradesHook}
+        marketApi={marketHook}
       />
     </DesktopFrame>
   )

@@ -2,13 +2,22 @@
 // Streak-Anzeige, Tages-Tracker und Geräte-Dialog (Pro). Liquid-Glass-Optik,
 // alles auf Handy-Breite ausgelegt.
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import WeekView from './WeekView'
 import DayView from './DayView'
 import ShoppingList from './ShoppingList'
 import ProgressPanel from './ProgressPanel'
 import Paywall from './Paywall'
+import CollectionView from './CollectionView'
+import TradeView from './TradeView'
+import MarketView from './MarketView'
+import DropOverlay from './DropOverlay'
+import { rollDrop } from '../domain/drops'
 import type { BillingInterval } from '../hooks/usePro'
+import type { CollectionState } from '../hooks/useCollection'
+import type { Friend, useMarket, useTrades } from '../hooks/useCollectionSocial'
+import type { Plate } from '../domain/plates'
+import type { Rarity } from '../domain/plates'
 import { downloadWeekICS } from '../domain/ics'
 import { XpButton, XpGroupBox, XpProgress, XpTitleBar, XpTitleButton } from './ui'
 import { addDays, formatKcal, WEEKDAY_LABELS } from '../domain/dates'
@@ -101,6 +110,7 @@ function StreakWidget({ streak }: { streak: number }) {
 
 export default function Planner({
   profile,
+  userId,
   plan,
   weekStartISO,
   checked,
@@ -128,8 +138,14 @@ export default function Planner({
   onAddWeight,
   workoutOverrides,
   onOverride,
+  collection,
+  collectionApi,
+  friends,
+  tradesApi,
+  marketApi,
 }: {
   profile: Profile
+  userId: string
   plan: WeekPlan
   weekStartISO: string
   checked: Set<string>
@@ -157,8 +173,25 @@ export default function Planner({
   onAddWeight: (kg: number) => boolean
   workoutOverrides: Record<number, string>
   onOverride: (dayIndex: number, workout: string | null) => void
+  /** Sammlungs-State (Wallet + Inventar). */
+  collection: CollectionState
+  /** Drop gutschreiben + Upgrade (aus useCollection). */
+  collectionApi: {
+    addDrop: (plateId: string) => boolean
+    applyUpgrade: (rarity: Rarity) => boolean
+    creditCoins: (amount: number) => boolean
+    spendCoins: (amount: number) => boolean
+    adjustInventory: (plateId: string, delta: number) => boolean
+  }
+  friends: Friend[]
+  tradesApi: ReturnType<typeof useTrades>
+  marketApi: ReturnType<typeof useMarket>
 }) {
-  const [tab, setTab] = useState<'plan' | 'shopping' | 'progress'>('plan')
+  const [tab, setTab] = useState<'plan' | 'shopping' | 'progress' | 'collection'>('plan')
+  const [drop, setDrop] = useState<Plate | null>(null)
+  const [dropError, setDropError] = useState<string | null>(null)
+  const rewardedChecks = useRef(new Set<string>())
+  const seenInit = useRef(false)
   const [selectedDay, setSelectedDay] = useState(() => {
     const t = new Date().getDay()
     return (t + 6) % 7 // Mo=0..So=6
@@ -180,6 +213,29 @@ export default function Planner({
     () => computeStreak(plan.days, (week) => checkedByWeek[week] ?? new Set()),
     [plan.days, checkedByWeek],
   )
+
+  // Belohnungs-Effekt: Der erste Nicht-Laden-Stand markiert alle bestehenden
+  // Checks als gesehen (KEINE Belohnung — sonst wäre jeder Reload ein
+  // Gratis-Drop). Erst NEU dazukommende Checks lösen genau einen Drop aus.
+  useEffect(() => {
+    if (syncLoading) return
+    if (!seenInit.current) {
+      seenInit.current = true
+      for (const checkId of checked) rewardedChecks.current.add(checkId)
+      return
+    }
+    for (const checkId of checked) {
+      if (!rewardedChecks.current.has(checkId)) {
+        rewardedChecks.current.add(checkId)
+        const result = rollDrop(streakInfo.streak)
+        collectionApi.addDrop(result.plate.id)
+        setDrop(result.plate)
+        break // ein Overlay nach dem anderen
+      }
+    }
+    // Absichtlich schmal: nur auf neue Checks reagieren.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checked, syncLoading])
 
   return (
     <div className="flex w-full max-w-md flex-col gap-2">
@@ -229,7 +285,7 @@ export default function Planner({
 
           {/* Tab-Leiste */}
           <div className="mb-2 flex gap-1">
-            {([['plan', 'Plan'], ['shopping', 'Einkauf'], ['progress', 'Fortschritt']] as const).map(
+            {([['plan', 'Plan'], ['shopping', 'Einkauf'], ['progress', 'Fortschritt'], ['collection', 'Sammlung']] as const).map(
               ([value, label]) => (
                 <XpButton
                   key={value}
@@ -325,12 +381,44 @@ export default function Planner({
               isPro={isPro}
             />
           )}
+
+          {tab === 'collection' && (
+            <CollectionView userId={userId} state={collection} onUpgrade={(rarity) => collectionApi.applyUpgrade(rarity)} />
+          )}
+          {tab === 'collection' && (
+            <div className="mt-2">
+              <TradeView userId={userId} inventory={collection.inventory} friends={friends} tradesApi={tradesApi} />
+            </div>
+          )}
+          {tab === 'collection' && (
+            <div className="mt-2">
+              <MarketView
+                coins={collection.coins}
+                inventory={collection.inventory}
+                marketApi={marketApi}
+                onSold={(plateId, price) => {
+                  collectionApi.adjustInventory(plateId, -1)
+                  collectionApi.creditCoins(price)
+                }}
+                onBought={(plateId, price) => {
+                  collectionApi.spendCoins(price)
+                  collectionApi.adjustInventory(plateId, 1)
+                }}
+                onError={(message) => setDropError(message)}
+              />
+              {dropError && (
+                <p role="alert" className="mt-1.5 rounded-[12px] border border-[#ff9b92]/30 bg-[#331514]/80 p-2 text-[11px] text-[#ff9b92]">{dropError}</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
       {showEquipment && (
         <EquipmentDialog owned={equipment} onToggle={onToggleEquipment} onClose={() => setShowEquipment(false)} />
       )}
+
+      {drop && <DropOverlay plate={drop} onClose={() => setDrop(null)} />}
 
       {!isPro && <Paywall onUpgrade={onUpgrade} />}
     </div>

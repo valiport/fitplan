@@ -33,9 +33,60 @@ export interface Database {
         Update: { user_id?: string; stripe_customer_id?: string | null; stripe_subscription_id?: string | null; status?: string; price_id?: string | null; interval?: string | null; current_period_end?: string | null; updated_at?: string }
         Relationships: []
       }
+      collections: {
+        Row: { user_id: string; coins: number; inventory: unknown; updated_at: string }
+        Insert: { user_id: string; coins: number; inventory: unknown; updated_at?: string }
+        Update: { user_id?: string; coins?: number; inventory?: unknown; updated_at?: string }
+        Relationships: []
+      }
+      friends: {
+        Row: { id: string; user_id_a: string; user_id_b: string; status: string; created_at: string }
+        Insert: { id?: string; user_id_a: string; user_id_b: string; status?: string; created_at?: string }
+        Update: { id?: string; user_id_a?: string; user_id_b?: string; status?: string; created_at?: string }
+        Relationships: []
+      }
+      trades: {
+        Row: { id: string; from_user_id: string; to_user_id: string; offered_items: unknown; requested_items: unknown; status: string; created_at: string }
+        Insert: { id?: string; from_user_id: string; to_user_id: string; offered_items: unknown; requested_items: unknown; status?: string; created_at?: string }
+        Update: { id?: string; from_user_id?: string; to_user_id?: string; offered_items?: unknown; requested_items?: unknown; status?: string; created_at?: string }
+        Relationships: []
+      }
+      market_listings: {
+        Row: { id: string; seller_id: string; plate_id: string; price: number; status: string; created_at: string }
+        Insert: { id?: string; seller_id: string; plate_id: string; price: number; status?: string; created_at?: string }
+        Update: { id?: string; seller_id?: string; plate_id?: string; price?: number; status?: string; created_at?: string }
+        Relationships: []
+      }
+      market_transactions: {
+        Row: { id: string; listing_id: string; plate_id: string; price: number; buyer_id: string; seller_id: string; created_at: string }
+        Insert: { id?: string; listing_id: string; plate_id: string; price: number; buyer_id: string; seller_id: string; created_at?: string }
+        Update: { id?: string; listing_id?: string; plate_id?: string; price?: number; buyer_id?: string; seller_id?: string; created_at?: string }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      create_trade: {
+        Args: { p_to: string; p_offered: Record<string, number>; p_requested: Record<string, number> }
+        Returns: string
+      }
+      respond_trade: {
+        Args: { p_trade: string; p_accept: boolean }
+        Returns: undefined
+      }
+      cancel_trade: {
+        Args: { p_trade: string }
+        Returns: undefined
+      }
+      create_listing: {
+        Args: { p_plate: string; p_price: number }
+        Returns: undefined
+      }
+      buy_listing: {
+        Args: { p_listing: string }
+        Returns: undefined
+      }
+    }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
   }
