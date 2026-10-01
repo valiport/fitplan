@@ -1,0 +1,358 @@
+
+> app@0.0.1 dev
+> vite
+
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m667[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5173[22m/[39m
+[2m  [32m➜[39m  [1mNetwork[22m[2m: use [22m[1m--host[22m[2m to expose[22m
+[2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
+[2m20:24:39[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m20:24:50[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m20:25:06[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui.tsx, /src/index.css[22m
+[2m20:25:06[22m [31m[1m[vite][22m[39m [31mInternal server error: C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\ui.tsx: Unexpected token, expected "jsxTagEnd" (56:2)
+
+[0m [90m 54 |[31m       [33m<[31m[33mdiv[31m className[33m=[31m[32m"p-3"[31m[33m>[31m{children}[33m<[31m[33m/[31m[33mdiv[31m[33m>[31m
+ [90m 55 |[31m     [33m<[31m[33m/[31m[33mdiv[31m
+[31m[1m>[22m[31m[90m 56 |[31m   )
+ [90m    |[31m   [31m[1m^[22m[31m
+ [90m 57 |[31m }
+ [90m 58 |[31m[0m[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mC:/Users/valen/Downloads/Online-Apps zum Geldverdienen entwickeln - Claude_files/src/components/ui.tsx[39m:56:2
+[33m  54 |        <div className="p-3">{children}</div>
+  55 |      </div
+  56 |    )
+     |    ^
+  57 |  }
+  58 |  [39m
+      at constructor (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:369:19)
+      at TypeScriptParserMixin.raise (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:6622:19)
+      at TypeScriptParserMixin.unexpected (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:6642:16)
+      at TypeScriptParserMixin.expect (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:6922:12)
+      at TypeScriptParserMixin.jsxParseClosingElementAt (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:4698:10)
+      at TypeScriptParserMixin.jsxParseElementAt (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:4713:37)
+      at TypeScriptParserMixin.jsxParseElement (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:4767:17)
+      at TypeScriptParserMixin.parseExprAtom (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:4777:19)
+      at TypeScriptParserMixin.parseExprSubscripts (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:11107:23)
+      at TypeScriptParserMixin.parseUpdate (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:11092:21)
+      at TypeScriptParserMixin.parseMaybeUnary (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:11072:23)
+      at TypeScriptParserMixin.parseMaybeUnary (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:9860:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:10925:61)
+      at TypeScriptParserMixin.parseExprOps (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:10930:23)
+      at TypeScriptParserMixin.parseMaybeConditional (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:10907:23)
+      at TypeScriptParserMixin.parseMaybeAssign (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:10857:21)
+      at C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:9798:39
+      at TypeScriptParserMixin.tryParse (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:6930:20)
+      at TypeScriptParserMixin.parseMaybeAssign (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:9798:18)
+      at C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:10826:39
+      at TypeScriptParserMixin.allowInAnd (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12460:12)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:10826:17)
+      at TypeScriptParserMixin.parseMaybeAssignAllowInOrVoidPattern (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12527:17)
+      at TypeScriptParserMixin.parseParenAndDistinguishExpression (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:11706:28)
+      at TypeScriptParserMixin.parseExprAtom (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:11362:23)
+      at TypeScriptParserMixin.parseExprAtom (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:4782:20)
+      at TypeScriptParserMixin.parseExprSubscripts (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:11107:23)
+      at TypeScriptParserMixin.parseUpdate (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:11092:21)
+      at TypeScriptParserMixin.parseMaybeUnary (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:11072:23)
+      at TypeScriptParserMixin.parseMaybeUnary (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:9860:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:10925:61)
+      at TypeScriptParserMixin.parseExprOps (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:10930:23)
+      at TypeScriptParserMixin.parseMaybeConditional (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:10907:23)
+      at TypeScriptParserMixin.parseMaybeAssign (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:10857:21)
+      at TypeScriptParserMixin.parseMaybeAssign (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:9809:20)
+      at TypeScriptParserMixin.parseExpressionBase (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:10810:23)
+      at C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:10806:39
+      at TypeScriptParserMixin.allowInAnd (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12455:16)
+      at TypeScriptParserMixin.parseExpression (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:10806:17)
+      at TypeScriptParserMixin.parseReturnStatement (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:13176:28)
+      at TypeScriptParserMixin.parseStatementContent (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12832:21)
+      at TypeScriptParserMixin.parseStatementContent (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:9531:18)
+      at TypeScriptParserMixin.parseStatementLike (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12801:17)
+      at TypeScriptParserMixin.parseStatementListItem (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12781:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:13350:61)
+      at TypeScriptParserMixin.parseBlockBody (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:13343:10)
+      at TypeScriptParserMixin.parseBlock (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:13331:10)
+      at TypeScriptParserMixin.parseFunctionBody (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12134:24)
+      at TypeScriptParserMixin.parseFunctionBodyAndFinish (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12120:10)
+      at TypeScriptParserMixin.parseFunctionBodyAndFinish (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:9195:18)
+[2m20:25:19[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui.tsx, /src/index.css[22m
+[2m20:25:19[22m [31m[1m[vite][22m[39m [31mInternal server error: C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\ui.tsx: Missing semicolon. (8:27)
+
+[0m [90m  6 |[31m
+ [90m  7 |[31m [90m/** Klassiker: Glaspanel-Klassen (ersetzen XP_OUTER / XP_INSET). */[31m
+[31m[1m>[22m[31m[90m  8 |[31m [36mexport[31m [36mconst[31m [33mXP_OUTER[31m [33m=[31m now [32m'glass-panel'[31m
+ [90m    |[31m                            [31m[1m^[22m[31m
+ [90m  9 |[31m [36mexport[31m [36mconst[31m [33mXP_INSET[31m [33m=[31m [32m'glass-inset'[31m
+ [90m 10 |[31m
+ [90m 11 |[31m [90m/** Glas-Titelleiste. */[31m[0m[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mC:/Users/valen/Downloads/Online-Apps zum Geldverdienen entwickeln - Claude_files/src/components/ui.tsx[39m:8:27
+[33m  6  |  
+  7  |  /** Klassiker: Glaspanel-Klassen (ersetzen XP_OUTER / XP_INSET). */
+  8  |  export const XP_OUTER = now 'glass-panel'
+     |                             ^
+  9  |  export const XP_INSET = 'glass-inset'
+  10 |  [39m
+      at constructor (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:369:19)
+      at TypeScriptParserMixin.raise (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:6622:19)
+      at TypeScriptParserMixin.semicolon (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:6918:10)
+      at TypeScriptParserMixin.parseVarStatement (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:13265:10)
+      at TypeScriptParserMixin.parseVarStatement (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:9431:31)
+      at TypeScriptParserMixin.parseStatementContent (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12885:23)
+      at TypeScriptParserMixin.parseStatementContent (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:9531:18)
+      at TypeScriptParserMixin.parseStatementLike (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12801:17)
+      at TypeScriptParserMixin.parseStatementListItem (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12781:17)
+      at TypeScriptParserMixin.parseExportDeclaration (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:13968:17)
+      at TypeScriptParserMixin.parseExportDeclaration (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:9652:85)
+      at TypeScriptParserMixin.maybeParseExportDeclaration (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:13927:31)
+      at TypeScriptParserMixin.parseExport (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:13846:29)
+      at TypeScriptParserMixin.parseExport (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:9408:20)
+      at TypeScriptParserMixin.parseStatementContent (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12912:27)
+      at TypeScriptParserMixin.parseStatementContent (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:9531:18)
+      at TypeScriptParserMixin.parseStatementLike (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12801:17)
+      at TypeScriptParserMixin.parseModuleItem (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12778:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:13350:36)
+      at TypeScriptParserMixin.parseBlockBody (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:13343:10)
+      at TypeScriptParserMixin.parseProgram (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12656:10)
+      at TypeScriptParserMixin.parseTopLevel (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12646:25)
+      at TypeScriptParserMixin.parse (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:14522:25)
+      at TypeScriptParserMixin.parse (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:10149:18)
+      at parse (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:14556:38)
+      at parser (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\core\lib\parser\index.js:41:34)
+      at parser.next (<anonymous>)
+      at normalizeFile (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\core\lib\transformation\normalize-file.js:51:37)
+      at normalizeFile.next (<anonymous>)
+      at run (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\core\lib\transformation\index.js:22:50)
+      at run.next (<anonymous>)
+      at transform (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\core\lib\transform.js:22:33)
+      at transform.next (<anonymous>)
+      at step (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\gensync\index.js:261:32)
+      at C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\gensync\index.js:273:13
+      at async.call.result.err.err (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\gensync\index.js:223:11)
+      at C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\gensync\index.js:189:28
+      at C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\core\lib\gensync-utils\async.js:67:7
+      at C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\gensync\index.js:113:33
+      at step (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\gensync\index.js:287:14)
+      at C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\gensync\index.js:273:13
+      at async.call.result.err.err (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\gensync\index.js:223:11)
+[2m20:25:44[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui.tsx, /src/index.css[22m
+[2m20:25:44[22m [36m[1m[vite][22m[39m [33mhmr invalidate [39m[2m/src/components/ui.tsx[22m Could not Fast Refresh ("XP_INSET" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m20:25:44[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css, /src/components/AuthGate.tsx, /src/components/Onboarding.tsx, /src/components/Planner.tsx, /@fs/C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\ProgressPanel.tsx, /@fs/C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\ShoppingList.tsx[22m
+[2m20:27:28[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
+[2m20:27:28[22m [31m[1m[vite][22m[39m [31mInternal server error: C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\App.tsx: Unexpected token, expected "from" (9:15)
+
+[0m [90m  7 |[31m [36mimport[31m { useAuthSession } [36mfrom[31m [32m'./hooks/useAuthSession'[31m
+ [90m  8 |[31m [36mimport[31m [33mOnboarding[31m [36mfrom[31m [32m'./components/Onboarding'[31m
+[31m[1m>[22m[31m[90m  9 |[31m [36mimport[31m [33mPlanner[31m main [36mfrom[31m [32m'./components/Planner'[31m
+ [90m    |[31m                [31m[1m^[22m[31m
+ [90m 10 |[31m [36mimport[31m { [33mXpButton[31m[33m,[31m [33mXpWindow[31m } [36mfrom[31m [32m'./components/ui'[31m
+ [90m 11 |[31m [36mimport[31m { useCloudProfile } [36mfrom[31m [32m'./hooks/useCloudProfile'[31m
+ [90m 12 |[31m [36mimport[31m { write_file } [36mfrom[31m [32m'./hooks/useCloudProfile'[31m[0m[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mC:/Users/valen/Downloads/Online-Apps zum Geldverdienen entwickeln - Claude_files/src/App.tsx[39m:9:15
+[33m  7  |  import { useAuthSession } from './hooks/useAuthSession'
+  8  |  import Onboarding from './components/Onboarding'
+  9  |  import Planner main from './components/Planner'
+     |                 ^
+  10 |  import { XpButton, XpWindow } from './components/ui'
+  11 |  import { useCloudProfile } from './hooks/useCloudProfile'[39m
+      at constructor (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:369:19)
+      at TypeScriptParserMixin.raise (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:6622:19)
+      at TypeScriptParserMixin.unexpected (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:6642:16)
+      at TypeScriptParserMixin.expectContextual (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:6901:12)
+      at TypeScriptParserMixin.parseImportSpecifiersAndAfter (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:14277:10)
+      at TypeScriptParserMixin.parseImport (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:14269:17)
+      at TypeScriptParserMixin.parseImport (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:9376:26)
+      at TypeScriptParserMixin.parseStatementContent (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12910:27)
+      at TypeScriptParserMixin.parseStatementContent (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:9531:18)
+      at TypeScriptParserMixin.parseStatementLike (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12801:17)
+      at TypeScriptParserMixin.parseModuleItem (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12778:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:13350:36)
+      at TypeScriptParserMixin.parseBlockBody (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:13343:10)
+      at TypeScriptParserMixin.parseProgram (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12656:10)
+      at TypeScriptParserMixin.parseTopLevel (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12646:25)
+      at TypeScriptParserMixin.parse (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:14522:25)
+      at TypeScriptParserMixin.parse (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:10149:18)
+      at parse (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:14556:38)
+      at parser (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\core\lib\parser\index.js:41:34)
+      at parser.next (<anonymous>)
+      at normalizeFile (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\core\lib\transformation\normalize-file.js:51:37)
+      at normalizeFile.next (<anonymous>)
+      at run (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\core\lib\transformation\index.js:22:50)
+      at run.next (<anonymous>)
+      at transform (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\core\lib\transform.js:22:33)
+      at transform.next (<anonymous>)
+      at step (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\gensync\index.js:261:32)
+      at C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\gensync\index.js:273:13
+      at async.call.result.err.err (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\gensync\index.js:223:11)
+      at C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\gensync\index.js:189:28
+      at C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\core\lib\gensync-utils\async.js:67:7
+      at C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\gensync\index.js:113:33
+      at step (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\gensync\index.js:287:14)
+      at C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\gensync\index.js:273:13
+      at async.call.result.err.err (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\gensync\index.js:223:11)
+[2m20:28:19[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
+[2m20:30:10[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\DayView.tsx, /src/index.css[22m
+[2m20:30:10[22m [36m[1m[vite][22m[39m [33mhmr invalidate [39m[2m/@fs/C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\DayView.tsx[22m Could not Fast Refresh (new export)
+[2m20:30:10[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/Planner.tsx[22m
+[2m20:30:57[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\WeekView.tsx, /src/index.css[22m
+[2m20:30:57[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\Paywall.tsx, /src/index.css[22m
+[2m20:31:28[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\WeekView.tsx, /src/index.css[22m
+[2m20:31:28[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\ShoppingList.tsx, /src/index.css[22m
+[2m20:31:57[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\ProgressPanel.tsx, /src/index.css[22m
+[2m20:31:57[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Onboarding.tsx, /src/index.css[22m
+[2m20:32:17[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/AuthGate.tsx, /src/index.css[22m
+[2m20:32:37[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Planner.tsx, /src/index.css[22m
+[2m20:32:59[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Planner.tsx, /src/index.css[22m
+[2m20:33:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Planner.tsx, /src/index.css[22m
+[2m20:37:31[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/AuthGate.tsx, /src/index.css[22m
+[2m20:37:31[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\WeekView.tsx, /src/index.css[22m
+[2m20:38:43[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/AuthGate.tsx, /src/index.css[22m
+[2m20:45:21[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m20:45:21[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\DayView.tsx, /src/index.css[22m
+[2m20:45:22[22m [36m[1m[vite][22m[39m [33mhmr invalidate [39m[2m/@fs/C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\DayView.tsx[22m Could not Fast Refresh ("checkPhotoTime" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m20:45:22[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/Planner.tsx[22m
+[2m20:47:35[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mAGENTS.md[22m
+[2m20:54:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/AuthGate.tsx, /src/App.tsx[22m
+[2m20:55:41[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
+[2m20:56:10[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
+[2m20:57:02[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
+[2m20:57:58[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\DayView.tsx, /src/index.css[22m
+[2m20:57:58[22m [36m[1m[vite][22m[39m [33mhmr invalidate [39m[2m/@fs/C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\DayView.tsx[22m Could not Fast Refresh ("checkPhotoTime" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m20:57:58[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/Planner.tsx[22m
+[2m20:58:25[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Planner.tsx, /src/index.css[22m
+[2m20:58:46[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
+[2m18:20:59[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msupabase/setup.sql[22m
+[2m18:21:12[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msupabase/setup.sql[22m
+[2m18:21:22[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msupabase/setup.sql[22m
+[2m18:21:41[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msupabase/setup.sql[22m
+[2m18:22:06[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/AuthGate.tsx, /src/App.tsx[22m
+[2m18:26:29[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
+[2m18:27:04[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/Planner.tsx[22m
+[2m18:27:24[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
+[2m18:27:34[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Planner.tsx, /src/index.css[22m
+[2m18:27:34[22m [31m[1m[vite][22m[39m [31mInternal server error: C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\Planner.tsx: Missing semicolon. (17:159)
+
+[0m [90m 15 |[31m [36mimport[31m { feasibleOptions [36mas[31m filterFeasible } [36mfrom[31m [32m'../domain/equipment'[31m
+ [90m 16 |[31m [36mimport[31m { [33mEQUIPMENT_CATALOG[31m } [36mfrom[31m [32m'../domain/equipment'[31m
+[31m[1m>[22m[31m[90m 17 |[31m [36mimport[31m type { [33mEquipment[31m[33m,[31m [33mEquipmentSet[31m[33m,[31m [33mProfile[31m[33m,[31m [33mWeekPlan[31m[33m,[31m [33mWeightEntry[31m } [36mfrom[31m [32m'../import type { Equipment, EquipmentSet, Profile, WeekPlan, WeightEntry } from '[31m[33m.[31m[33m.[31m[33m/[31mdomain[33m/[31mtypes[32m'[31m
+ [90m    |[31m                                                                                                                                                                [31m[1m^[22m[31m
+ [90m 18 |[31m
+ [90m 19 |[31m [90m/** Pro-Dialog: Geräte-Auswahl, nach der der Plan die Übungen anpasst. */[31m
+ [90m 20 |[31m [36mfunction[31m [33mEquipmentDialog[31m({ owned[33m,[31m onToggle[33m,[31m onClose }[33m:[31m {[0m[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mC:/Users/valen/Downloads/Online-Apps zum Geldverdienen entwickeln - Claude_files/src/components/Planner.tsx[39m:17:159
+[33m  15 |  import { feasibleOptions as filterFeasible } from '../domain/equipment'
+  16 |  import { EQUIPMENT_CATALOG } from '../domain/equipment'
+  17 |  import type { Equipment, EquipmentSet, Profile, WeekPlan, WeightEntry } from '../import type { Equipment, EquipmentSet, Profile, WeekPlan, WeightEntry } from '../domain/types'
+     |                                                                                                                                                                 ^
+  18 |  
+  19 |  /** Pro-Dialog: Geräte-Auswahl, nach der der Plan die Übungen anpasst. */[39m
+      at constructor (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:369:19)
+      at TypeScriptParserMixin.raise (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:6622:19)
+      at TypeScriptParserMixin.semicolon (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:6918:10)
+      at TypeScriptParserMixin.parseImportSourceAndAttributes (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:14287:10)
+      at TypeScriptParserMixin.parseImportSpecifiersAndAfter (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:14278:17)
+      at TypeScriptParserMixin.parseImport (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:9373:28)
+      at TypeScriptParserMixin.parseStatementContent (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12910:27)
+      at TypeScriptParserMixin.parseStatementContent (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:9531:18)
+      at TypeScriptParserMixin.parseStatementLike (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12801:17)
+      at TypeScriptParserMixin.parseModuleItem (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12778:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:13350:36)
+      at TypeScriptParserMixin.parseBlockBody (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:13343:10)
+      at TypeScriptParserMixin.parseProgram (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12656:10)
+      at TypeScriptParserMixin.parseTopLevel (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:12646:25)
+      at TypeScriptParserMixin.parse (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:14522:25)
+      at TypeScriptParserMixin.parse (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:10149:18)
+      at parse (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\parser\lib\index.js:14556:38)
+      at parser (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\core\lib\parser\index.js:41:34)
+      at parser.next (<anonymous>)
+      at normalizeFile (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\core\lib\transformation\normalize-file.js:51:37)
+      at normalizeFile.next (<anonymous>)
+      at run (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\core\lib\transformation\index.js:22:50)
+      at run.next (<anonymous>)
+      at transform (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\core\lib\transform.js:22:33)
+      at transform.next (<anonymous>)
+      at step (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\gensync\index.js:261:32)
+      at C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\gensync\index.js:273:13
+      at async.call.result.err.err (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\gensync\index.js:223:11)
+      at C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\gensync\index.js:189:28
+      at C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\@babel\core\lib\gensync-utils\async.js:67:7
+      at C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\gensync\index.js:113:33
+      at step (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\gensync\index.js:287:14)
+      at C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\gensync\index.js:273:13
+      at async.call.result.err.err (C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\node_modules\gensync\index.js:223:11)
+[2m18:27:45[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Planner.tsx, /src/index.css[22m
+[2m18:28:03[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Planner.tsx, /src/index.css[22m
+[2m18:28:22[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Planner.tsx, /src/index.css[22m
+[2m18:28:43[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Planner.tsx, /src/index.css[22m
+[2m19:43:09[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/App.tsx[22m
+[2m19:46:54[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/App.tsx[22m
+[2m19:56:08[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/App.tsx[22m
+[2m19:57:18[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
+[2m20:28:19[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m20:29:43[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
+[2m20:29:43[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\DayView.tsx, /src/index.css[22m
+[2m20:29:43[22m [36m[1m[vite][22m[39m [33mhmr invalidate [39m[2m/@fs/C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\DayView.tsx[22m Could not Fast Refresh ("checkPhotoTime" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m20:29:43[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/Planner.tsx[22m
+[2m20:29:58[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Planner.tsx, /src/index.css[22m
+[2m20:29:58[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\WeekView.tsx, /src/index.css[22m
+[2m20:30:09[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/AuthGate.tsx, /src/index.css[22m
+[2m20:30:09[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Onboarding.tsx, /src/index.css[22m
+[2m20:30:09[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\ProgressPanel.tsx, /src/index.css[22m
+[2m20:30:17[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\ShoppingList.tsx, /src/index.css[22m
+[2m20:30:17[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\Paywall.tsx, /src/index.css[22m
+[2m20:30:17[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mindex.html[22m
+[2m20:30:17[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui.tsx, /src/index.css[22m
+[2m20:37:59[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mAGENTS.md[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m changed tsconfig file detected: C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\tsconfig.json - Clearing cache and forcing full-reload to ensure TypeScript is compiled with updated config values.
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mAGENTS.md[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mindex.html[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mREADME.md[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mnetlify.toml[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mpackage.json[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/AuthGate.tsx, /src/index.css[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\DayView.tsx, /src/index.css[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Onboarding.tsx, /src/index.css[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\Paywall.tsx, /src/index.css[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Planner.tsx, /src/index.css[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\ProgressPanel.tsx, /src/index.css[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\ShoppingList.tsx, /src/index.css[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui.tsx, /src/index.css[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\valen\Downloads\Online-Apps zum Geldverdienen entwickeln - Claude_files\src\components\WeekView.tsx, /src/index.css[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/domain/dates.ts[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/main.tsx[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/vite-env.d.ts[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/domain/equipment.ts[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/domain/nutrition.ts[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/domain/recipes.ts[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/domain/shopping.ts[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/domain/storage.ts[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/domain/training.ts[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/domain/types.ts[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/domain/weekPlan.ts[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/hooks/useAuthSession.ts[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/hooks/useCloudProfile.ts[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/hooks/useEquipment.ts[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/hooks/usePro.ts[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/hooks/useProfile.ts[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/hooks/useStreak.ts[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/hooks/useSyncedChecks.ts[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/hooks/useWeekChecks.ts[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/hooks/useWeights.ts[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/hooks/useWorkoutOverrides.ts[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/lib/supabase.ts[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/lib/upload.ts[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/lib/photoQueue.ts[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msupabase/setup.sql[22m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mvite.config.ts changed, restarting server...[39m
+[2m20:38:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mtsconfig.json[22m
+Re-optimizing dependencies because lockfile has changed
+[2m20:38:17[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mindex.html[22m
+[2m20:38:17[22m [36m[1m[vite][22m[39m server restarted.
+[2m20:57:14[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/hooks/useWeights.ts[22m
+[2m20:57:58[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/hooks/useEquipment.ts[22m
