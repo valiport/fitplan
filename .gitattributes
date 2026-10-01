@@ -1,0 +1,23 @@
+# Zeilenenden normalisieren: LF im Repo UND im Checkout.
+# Hintergrund: Ein GitHub-Web-Upload (06faf94) hat alle Dateien als CRLF
+# committet und dadurch Git-Diffs zerschossen. Mit eol=lf bleiben Blobs und
+# Arbeitskopie auf Windows wie auf Linux identisch (Vite/TS egal, Git ruhig).
+* text=auto eol=lf
+
+# Windows-Skripte brauchen CRLF — falls später welche dazukommen.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binärdateien explizit schützen (falls sie je hinzukommen).
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
+*.zip binary
