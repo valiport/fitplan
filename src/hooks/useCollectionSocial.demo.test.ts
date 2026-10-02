@@ -28,7 +28,7 @@ describe('useFriends (Demo)', () => {
     expect(result.current.error).toBeNull()
   })
 
-  it('sendRequest/respondRequest werfen ehrliche Cloud-Fehler', async () => {
+  it('sendRequest/respondRequest/removeFriend werfen ehrliche Cloud-Fehler', async () => {
     const { result } = renderHook(() => useFriends('user-1'))
     await waitFor(() => expect(result.current.loading).toBe(false))
     await act(async () => {
@@ -36,6 +36,8 @@ describe('useFriends (Demo)', () => {
         .rejects.toThrow('Freundschaftsanfragen benötigen die Cloud.')
       await expect(result.current.respondRequest('f1', true))
         .rejects.toThrow('Freundschaftsanfragen benötigen die Cloud.')
+      await expect(result.current.removeFriend('demo-friend-1'))
+        .rejects.toThrow('Freundschaft entfernen benötigt die Cloud.')
     })
   })
 })

@@ -252,6 +252,28 @@ describe('useFriends: Cloud-Verträge', () => {
     })
     expect(supabaseRpc).toHaveBeenCalledWith('respond_friend_request', { p_friend: 'f2', p_accept: true })
   })
+
+  it('remove_friend sendet nur p_friend (Freundschaft beenden)', async () => {
+    supabaseRpc.mockResolvedValueOnce({ data: null, error: null })
+    const { result } = renderHook(() => useFriends('user-1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    await act(async () => {
+      await result.current.removeFriend('f1')
+    })
+    expect(supabaseRpc).toHaveBeenCalledWith('remove_friend', { p_friend: 'f1' })
+  })
+
+  it('remove_friend wirft RPC-Fehler', async () => {
+    supabaseRpc.mockResolvedValueOnce({ data: null, error: { message: 'Freundschaft nicht gefunden.' } })
+    const { result } = renderHook(() => useFriends('user-1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    await act(async () => {
+      await expect(result.current.removeFriend('f1'))
+        .rejects.toMatchObject({ message: 'Freundschaft nicht gefunden.' })
+    })
+  })
 })
 
 describe('Realtime-Anbindung', () => {

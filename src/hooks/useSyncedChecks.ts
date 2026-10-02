@@ -20,6 +20,31 @@ type CheckRow = {
 
 type CheckRows = Record<string, CheckRow>
 const rowKey = (row: Pick<CheckRow, 'week_start' | 'check_id'>) => `${row.week_start}|${row.check_id}`
+
+/** Lokal beobachtete Änderung (Realtime-Ereignis oder eigener Schreibzugriff). */
+type TouchedEntry = { row: CheckRow | null; at: number }
+
+/**
+ * Überlagert einen geladenen Cloud-Stand mit lokal beobachteten Änderungen,
+ * die NACH Start des Ladens passiert sind (`since`). Ältere Beobachtungen
+ * lassen den Serverstand gewinnen — Cloud bleibt Source of Truth, ohne dass
+ * gleichzeitige lokale Aktionen verloren gehen (Race-Schutz).
+ */
+function mergeTouched(
+  fetched: CheckRow[],
+  touched: Map<string, TouchedEntry>,
+  since: number,
+): CheckRows {
+  const merged: CheckRows = {}
+  fetched.forEach((row) => { merged[rowKey(row)] = row })
+  touched.forEach((entry, key) => {
+    // Gleichstand gewinnt lokal: nie eine frische Benutzeraktion verlieren.
+    if (entry.at < since) return
+    if (entry.row) merged[key] = entry.row
+    else delete merged[key]
+  })
+  return merged
+}
 const isTrainingId = (id: string) => /^d[0-6]-workout-0$/.test(id)
 const isMealId = (id: string) => /^d[0-6]-meal-[0-3]$/.test(id)
 const validMonday = (week: string) => {
@@ -184,7 +209,7 @@ export function useSyncedChecks(userId: string, weekStart: string) {
   /** Anzahl Foto-Uploads, die offline in der Warteschlange liegen. */
   const [queuedCount, setQueuedCount] = useState(0)
   const busyKeys = useRef(new Set<string>())
-  const touchedRows = useRef(new Map<string, CheckRow | null>())
+  const touchedRows = useRef(new Map<string, TouchedEntry>())
   const rowsRef = useRef(rows)
   rowsRef.current = rows
   /** Spiegelt das „active“-Flag des Ladens-Effekts für Queue-Worker. */
@@ -229,15 +254,10 @@ export function useSyncedChecks(userId: string, weekStart: string) {
     setError(null)
 
     const refreshChecks = async () => {
+      const since = Date.now()
       const fetched = await readAllRows(userId)
       if (!active) return
-      const refreshed: CheckRows = {}
-      fetched.forEach((row) => { refreshed[rowKey(row)] = row })
-      touchedRows.current.forEach((row, key) => {
-        if (row) refreshed[key] = row
-        else delete refreshed[key]
-      })
-      commitRows(() => refreshed)
+      commitRows(() => mergeTouched(fetched, touchedRows.current, since))
     }
 
     const channel = supabase
@@ -249,7 +269,7 @@ export function useSyncedChecks(userId: string, weekStart: string) {
         if (!value.week_start || !value.check_id) return
         const key = rowKey(value as Pick<CheckRow, 'week_start' | 'check_id'>)
         const deleted = payload.eventType === 'DELETE' || value.is_checked === false
-        touchedRows.current.set(key, deleted ? null : value as CheckRow)
+        touchedRows.current.set(key, { row: deleted ? null : value as CheckRow, at: Date.now() })
         commitRows((current) => {
           const next = { ...current }
           if (deleted) delete next[key]
@@ -273,15 +293,10 @@ export function useSyncedChecks(userId: string, weekStart: string) {
     void (async () => {
       try {
         await importLocalTrainingChecks(userId)
+        const since = Date.now()
         const fetched = await readAllRows(userId)
         if (!active) return
-        const syncedRows: CheckRows = {}
-        fetched.forEach((row) => { syncedRows[rowKey(row)] = row })
-        touchedRows.current.forEach((row, key) => {
-          if (row) syncedRows[key] = row
-          else delete syncedRows[key]
-        })
-        commitRows(() => syncedRows)
+        commitRows(() => mergeTouched(fetched, touchedRows.current, since))
         setError(null)
       } catch (cause) {
         if (!active) return
@@ -365,6 +380,7 @@ export function useSyncedChecks(userId: string, weekStart: string) {
         const { error: deleteError } = await supabase.from(TABLE).delete()
           .eq('user_id', userId).eq('week_start', weekStart).eq('check_id', checkId)
         if (deleteError) throw deleteError
+        touchedRows.current.set(key, { row: null, at: Date.now() })
         commitRows((current) => {
           const next = { ...current }
           delete next[key]
@@ -385,15 +401,19 @@ export function useSyncedChecks(userId: string, weekStart: string) {
       const newRow: CheckRow = { user_id: userId, week_start: weekStart, check_id: checkId, is_checked: true, photo_path: null }
       const { error: saveError } = await supabase.from(TABLE).upsert(newRow, { onConflict: 'user_id,week_start,check_id' })
       if (saveError) throw saveError
+      touchedRows.current.set(key, { row: newRow, at: Date.now() })
       commitRows((current) => ({ ...current, [key]: newRow }))
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : 'Check konnte nicht synchronisiert werden.'
       setError(message)
-      if (message.includes('Datenbank-Berechtigungen')) void readAllRows(userId).then((fetched) => {
-        const refreshed: CheckRows = {}
-        fetched.forEach((row) => { refreshed[rowKey(row)] = row })
-        commitRows(() => refreshed)
-      }).catch(() => undefined)
+      if (message.includes('Datenbank-Berechtigungen')) {
+        const since = Date.now()
+        void readAllRows(userId).then((fetched) => {
+          // Nach Unmount/UserId-Wechsel nicht mehr in den Zustand schreiben.
+          if (!activeRef.current) return
+          commitRows(() => mergeTouched(fetched, touchedRows.current, since))
+        }).catch(() => undefined)
+      }
       throw cause
     } finally {
       busyKeys.current.delete(key)
@@ -430,6 +450,7 @@ export function useSyncedChecks(userId: string, weekStart: string) {
           if (confirmError || confirmed?.photo_path !== path || !confirmed.is_checked) throw saveError
         }
         databaseCommitted = true
+        touchedRows.current.set(entryKey, { row: newRow, at: Date.now() })
         commitRows((current) => ({ ...current, [entryKey]: newRow }))
         if (previousPhoto && previousPhoto !== path) {
           await supabase.storage.from(BUCKET).remove([previousPhoto]).catch(() => undefined)
@@ -509,6 +530,7 @@ export function useSyncedChecks(userId: string, weekStart: string) {
         if (confirmError || confirmed?.photo_path !== path || !confirmed.is_checked) throw saveError
       }
       databaseCommitted = true
+      touchedRows.current.set(key, { row: newRow, at: Date.now() })
       commitRows((current) => ({ ...current, [key]: newRow }))
       if (previousPhoto && previousPhoto !== path) {
         const { error: removeError } = await supabase.storage.from(BUCKET).remove([previousPhoto])

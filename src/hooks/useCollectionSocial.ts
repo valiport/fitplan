@@ -33,6 +33,7 @@ export function useFriends(userId: string): {
   error: string | null
   sendRequest: (toUserId: string) => Promise<void>
   respondRequest: (requestId: string, accept: boolean) => Promise<void>
+  removeFriend: (friendId: string) => Promise<void>
   reload: () => Promise<void>
 } {
   const [friends, setFriends] = useState<Friend[]>([])
@@ -119,7 +120,15 @@ export function useFriends(userId: string): {
     await load()
   }, [load])
 
-  return { friends, requests, loading, error, sendRequest, respondRequest, reload: load }
+  /** Freundschaft beenden (oder eigene offene Anfrage zurückziehen). */
+  const removeFriend = useCallback(async (friendId: string) => {
+    if (!supabase) throw new Error('Freundschaft entfernen benötigt die Cloud.')
+    const { error: rpcError } = await supabase.rpc('remove_friend', { p_friend: friendId })
+    if (rpcError) throw rpcError
+    await load()
+  }, [load])
+
+  return { friends, requests, loading, error, sendRequest, respondRequest, removeFriend, reload: load }
 }
 
 // ------------------------------------------------------------------ Trades

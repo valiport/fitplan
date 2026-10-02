@@ -23,11 +23,13 @@ function describeItems(items: TradeItems): string {
     .join(', ') || '—'
 }
 
-export default function TradeView({ userId, inventory, friendsApi, tradesApi }: {
+export default function TradeView({ userId, inventory, friendsApi, tradesApi, onChanged }: {
   userId: string
   inventory: Inventory
   friendsApi: ReturnType<typeof useFriends>
   tradesApi: ReturnType<typeof useTrades>
+  /** Wallet/Inventar nach jeder Cloud-Transaktion autoritativ nachladen. */
+  onChanged: () => void
 }) {
   const { friends, requests } = friendsApi
   const [partnerId, setPartnerId] = useState<string>('')
@@ -37,6 +39,7 @@ export default function TradeView({ userId, inventory, friendsApi, tradesApi }: 
   const [busy, setBusy] = useState(false)
   const [friendId, setFriendId] = useState('')
   const [friendBusy, setFriendBusy] = useState(false)
+  const [removeId, setRemoveId] = useState<string | null>(null)
 
   const incoming = tradesApi.trades.filter((t) => t.toUserId === userId && t.status === 'pending')
   const outgoing = tradesApi.trades.filter((t) => t.fromUserId === userId && t.status === 'pending')
@@ -57,6 +60,7 @@ export default function TradeView({ userId, inventory, friendsApi, tradesApi }: 
     setNotice(null)
     try {
       await tradesApi.createTrade(partner.id, toTradeItems(mySelection), toTradeItems(wantSelection))
+      onChanged()
       setMySelection({})
       setWantSelection({})
       setNotice('Tausch-Angebot gesendet! Dein Freund muss es bestätigen.')
@@ -101,16 +105,35 @@ export default function TradeView({ userId, inventory, friendsApi, tradesApi }: 
         {friends.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {friends.map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setPartnerId(f.id)}
-                aria-pressed={partnerId === f.id}
-                className={
-                  'glass-chip ' + (partnerId === f.id ? 'glass-chip-active' : '')
-                }
-              >
-                👤 {f.name}
-              </button>
+              <span key={f.id} className="flex items-center gap-1">
+                <button
+                  onClick={() => setPartnerId(f.id)}
+                  aria-pressed={partnerId === f.id}
+                  className={
+                    'glass-chip ' + (partnerId === f.id ? 'glass-chip-active' : '')
+                  }
+                >
+                  👤 {f.name}
+                </button>
+                <XpButton
+                  variant="danger"
+                  className="!px-1.5 !py-0.5 !text-[10px]"
+                  aria-label={`Freundschaft mit ${f.name} entfernen`}
+                  title="Freundschaft entfernen"
+                  disabled={removeId !== null}
+                  onClick={() => {
+                    if (!window.confirm(`Freundschaft mit ${f.name} entfernen? Eine neue Anfrage wäre nötig.`)) return
+                    setRemoveId(f.id)
+                    void friendsApi.removeFriend(f.id).then(() => {
+                      if (partnerId === f.id) setPartnerId('')
+                    }).catch((cause: unknown) => {
+                      setNotice(cause instanceof Error ? cause.message : 'Freundschaft konnte nicht entfernt werden.')
+                    }).finally(() => setRemoveId(null))
+                  }}
+                >
+                  ✕
+                </XpButton>
+              </span>
             ))}
           </div>
         )}
@@ -183,7 +206,7 @@ export default function TradeView({ userId, inventory, friendsApi, tradesApi }: 
         {incoming.length === 0 ? (
           <p className="text-[12px] text-[#8bada7]">Keine offenen Angebote.</p>
         ) : (
-          incoming.map((trade) => <TradeRow key={trade.id} trade={trade} tradesApi={tradesApi} userId={userId} />)
+          incoming.map((trade) => <TradeRow key={trade.id} trade={trade} tradesApi={tradesApi} userId={userId} onChanged={onChanged} />)
         )}
       </XpGroupBox>
 
@@ -192,7 +215,7 @@ export default function TradeView({ userId, inventory, friendsApi, tradesApi }: 
         {outgoing.length === 0 ? (
           <p className="text-[12px] text-[#8bada7]">Keine offenen Angebote.</p>
         ) : (
-          outgoing.map((trade) => <TradeRow key={trade.id} trade={trade} tradesApi={tradesApi} userId={userId} />)
+          outgoing.map((trade) => <TradeRow key={trade.id} trade={trade} tradesApi={tradesApi} userId={userId} onChanged={onChanged} />)
         )}
       </XpGroupBox>
 
@@ -218,10 +241,11 @@ export default function TradeView({ userId, inventory, friendsApi, tradesApi }: 
 }
 
 /** Zeile eines Trades mit Aktionen (annehmen/ablehnen/zurückziehen). */
-function TradeRow({ trade, tradesApi, userId }: {
+function TradeRow({ trade, tradesApi, userId, onChanged }: {
   trade: Trade
   tradesApi: ReturnType<typeof useTrades>
   userId: string
+  onChanged: () => void
 }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -236,6 +260,7 @@ function TradeRow({ trade, tradesApi, userId }: {
     setError(null)
     try {
       await tradesApi.respondToTrade(trade.id, accept)
+      onChanged()
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Aktion fehlgeschlagen.')
     } finally {
@@ -248,6 +273,7 @@ function TradeRow({ trade, tradesApi, userId }: {
     setError(null)
     try {
       await tradesApi.cancelTrade(trade.id)
+      onChanged()
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Zurückziehen fehlgeschlagen.')
     } finally {

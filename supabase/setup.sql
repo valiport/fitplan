@@ -12,13 +12,24 @@ create table if not exists public.subscriptions (
   price_id text,
   interval text,
   current_period_end timestamptz,
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  -- Zeitstempel des letzten verarbeiteten Stripe-Events (Out-of-Order-Schutz:
+  -- verspätete Retries dürfen keinen neueren Stand zurückschreiben).
+  last_event_at timestamptz
 );
 
 alter table public.subscriptions enable row level security;
 grant select on public.subscriptions to authenticated;
 grant update on public.subscriptions to service_role;
 grant all on public.subscriptions to service_role;
+-- Defense in Depth: Clients dürfen Abo-Daten ausschließlich lesen (der
+-- Webhook schreibt mit service_role). Auch wenn RLS bereits blockt, werden
+-- Schreib-Privilegien explizit entzogen — Default-Privileges könnten sonst
+-- bei Tabellenänderungen wieder aufleben.
+revoke insert, update, delete on public.subscriptions from anon, authenticated;
+revoke all on public.subscriptions from anon;
+-- Migration für bestehende Tabellen (create table if not exists ergänzt keine Spalten).
+alter table public.subscriptions add column if not exists last_event_at timestamptz;
 
 drop policy if exists "Users read own subscription" on public.subscriptions;
 create policy "Users read own subscription"

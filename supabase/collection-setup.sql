@@ -394,6 +394,12 @@ begin
   select coalesce(inventory, '{}'::jsonb) into v_seller_inv from public.collections
     where user_id = v_listing.seller_id for update;
   if not found then raise exception 'Verkäufer-Inventar fehlt.'; end if;
+  -- Defense in Depth: Die Reservierung in create_listing sollte die Platte
+  -- immer vorhalten; ohne diese Prüfung könnte ein Umgehungsweg Platten aus
+  -- dem Nichts erzeugen (Käufer +1, Verkäufer -1 unter Null → Schlüsselwegfall).
+  if public.inv_get(v_seller_inv, v_listing.plate_id) < 1 then
+    raise exception 'Die Platte ist beim Verkäufer nicht mehr im Bestand.';
+  end if;
 
   update public.collections set coins = coins - v_listing.price, updated_at = now()
     where user_id = v_me;
@@ -452,6 +458,22 @@ begin
   else
     delete from public.friends where id = p_friend;
   end if;
+end;
+$$;
+
+-- Freundschaft entfernen: beide Seiten dürfen die Beziehung beenden (oder eine
+-- eigene offene Anfrage zurückziehen). Löscht die Zeile endgültig.
+create or replace function public.remove_friend(p_friend uuid)
+returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  v_me uuid := (select auth.uid());
+begin
+  if v_me is null then raise exception 'Nicht angemeldet.'; end if;
+  delete from public.friends
+    where id = p_friend
+      and v_me in (user_id_a, user_id_b);
+  if not found then raise exception 'Freundschaft nicht gefunden.'; end if;
 end;
 $$;
 
@@ -568,6 +590,7 @@ revoke all on function public.claim_check_reward(date, text) from public, anon;
 revoke all on function public.upgrade_collection(text) from public, anon;
 grant execute on function public.send_friend_request(uuid) to authenticated;
 grant execute on function public.respond_friend_request(uuid, boolean) to authenticated;
+grant execute on function public.remove_friend(uuid) to authenticated;
 grant execute on function public.create_trade(uuid, jsonb, jsonb) to authenticated;
 grant execute on function public.respond_trade(uuid, boolean) to authenticated;
 grant execute on function public.cancel_trade(uuid) to authenticated;

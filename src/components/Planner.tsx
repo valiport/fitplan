@@ -408,7 +408,13 @@ export default function Planner({
           )}
           {tab === 'collection' && (
             <div className="mt-2">
-              <TradeView userId={userId} inventory={collection.inventory} friendsApi={friendsApi} tradesApi={tradesApi} />
+              <TradeView
+                userId={userId}
+                inventory={collection.inventory}
+                friendsApi={friendsApi}
+                tradesApi={tradesApi}
+                onChanged={() => { void collectionApi.refresh() }}
+              />
             </div>
           )}
           {tab === 'collection' && (

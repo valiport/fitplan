@@ -28,9 +28,9 @@ export interface Database {
         Relationships: []
       }
       subscriptions: {
-        Row: { user_id: string; stripe_customer_id: string | null; stripe_subscription_id: string | null; status: string; price_id: string | null; interval: string | null; current_period_end: string | null; updated_at: string }
-        Insert: { user_id: string; stripe_customer_id?: string | null; stripe_subscription_id?: string | null; status: string; price_id?: string | null; interval?: string | null; current_period_end?: string | null; updated_at?: string }
-        Update: { user_id?: string; stripe_customer_id?: string | null; stripe_subscription_id?: string | null; status?: string; price_id?: string | null; interval?: string | null; current_period_end?: string | null; updated_at?: string }
+        Row: { user_id: string; stripe_customer_id: string | null; stripe_subscription_id: string | null; status: string; price_id: string | null; interval: string | null; current_period_end: string | null; updated_at: string; last_event_at: string | null }
+        Insert: { user_id: string; stripe_customer_id?: string | null; stripe_subscription_id?: string | null; status: string; price_id?: string | null; interval?: string | null; current_period_end?: string | null; updated_at?: string; last_event_at?: string | null }
+        Update: { user_id?: string; stripe_customer_id?: string | null; stripe_subscription_id?: string | null; status?: string; price_id?: string | null; interval?: string | null; current_period_end?: string | null; updated_at?: string; last_event_at?: string | null }
         Relationships: []
       }
       collections: {
@@ -68,6 +68,7 @@ export interface Database {
     Functions: {
       send_friend_request: { Args: { p_to: string }; Returns: string }
       respond_friend_request: { Args: { p_friend: string; p_accept: boolean }; Returns: undefined }
+      remove_friend: { Args: { p_friend: string }; Returns: undefined }
       create_trade: {
         Args: { p_to: string; p_offered: Record<string, number>; p_requested: Record<string, number> }
         Returns: string

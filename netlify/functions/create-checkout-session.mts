@@ -59,7 +59,9 @@ export default async (req: Request) => {
       existing.data[0] ??
       (await stripe.customers.create({
         email: user.email,
-        'metadata[supabase_user_id]': user.id,
+        // Metadaten als echtes Objekt — die Form-Encoding-Syntax
+        // 'metadata[…]' wurde vom SDK still ignoriert.
+        metadata: { supabase_user_id: user.id },
       }))
 
     // Checkout-Session: Abo-Modus, client_reference_id = Supabase-User.

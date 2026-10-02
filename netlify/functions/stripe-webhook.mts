@@ -41,19 +41,35 @@ export default async (req: Request) => {
     return json(400, { error: 'Ungültige Signatur.' })
   }
 
+  // Ordnungs-Zeitstempel des Events: verspätete Retries dürfen keinen
+  // neueren Abo-Stand zurückschreiben (z. B. 'canceled' von 'active'
+  // überschrieben → Gratis-Pro trotz Kündigung).
+  const eventAt = new Date(event.created * 1000).toISOString()
+
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session
-    const userId =
-      session.client_reference_id ??
-      session.metadata?.['supabase_user_id'] ??
-      null
-    const customer = typeof session.customer === 'string' ? session.customer : null
-    const subscription =
-      typeof session.subscription === 'string'
-        ? await stripe.subscriptions.retrieve(session.subscription)
-        : null
-    if (userId && subscription) {
-      await upsertSubscription(supabaseUrl, serviceRoleKey, userId, customer, subscription)
+    // Nur Abo-Checkouts sind hier relevant; andere Modi (payment/setup)
+    // werden bewusst ignoriert.
+    if (session.mode === 'subscription') {
+      const userId =
+        session.client_reference_id ??
+        session.metadata?.['supabase_user_id'] ??
+        null
+      const customer = typeof session.customer === 'string' ? session.customer : null
+      const subscription =
+        typeof session.subscription === 'string'
+          ? await stripe.subscriptions.retrieve(session.subscription)
+          : (typeof session.subscription === 'object' && session.subscription !== null
+            ? session.subscription
+            : null)
+      if (!userId || !subscription) {
+        // Nie still verwerfen: ein zahlender Kunde ohne zuordenbare Zeile
+        // muss als fehlgeschlagenes Event sichtbar bleiben (500 → Retry).
+        throw new Error(
+          `checkout.session.completed ${event.id}: Supabase-User oder Abo fehlt — nicht zuordenbar.`,
+        )
+      }
+      await upsertSubscription(supabaseUrl, serviceRoleKey, userId, customer, subscription, eventAt)
     }
   }
 
@@ -64,9 +80,21 @@ export default async (req: Request) => {
       (typeof subscription.customer === 'string'
         ? await supabaseUserIdForCustomer(supabaseUrl, serviceRoleKey, subscription.customer)
         : null)
-    if (userId) {
-      await upsertSubscription(supabaseUrl, serviceRoleKey, userId, subscription.customer, subscription)
+    if (!userId) {
+      // Retry kann hier helfen (z. B. checkout-Event noch nicht verarbeitet):
+      // bewusst werfen statt still zu verlieren.
+      throw new Error(
+        `${event.type} ${event.id}: Kein Supabase-User für Kunde ${String(subscription.customer)} — nicht zuordenbar.`,
+      )
     }
+    await upsertSubscription(
+      supabaseUrl,
+      serviceRoleKey,
+      userId,
+      typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id ?? null,
+      subscription,
+      eventAt,
+    )
   }
 
   return json(200, { received: true })
@@ -79,47 +107,94 @@ function json(status: number, body: unknown): Response {
   })
 }
 
-/** Schreibt den Abo-Stand in public.subscriptions (idempotenter Upsert). */
+/**
+ * Schreibt den Abo-Stand in public.subscriptions.
+ * Reihenfolge-sicher: Das Event wird nur übernommen, wenn kein neueres Event
+ * bereits geschrieben hat (Guard auf last_event_at). Duplikate sind dadurch
+ * idempotent, verspätete Retries harmlos.
+ */
 async function upsertSubscription(
   supabaseUrl: string,
   serviceRoleKey: string,
   userId: string,
   customer: string | null,
   subscription: Stripe.Subscription,
+  eventAt: string,
 ): Promise<void> {
   const canceled =
     subscription.status === 'canceled' ||
     subscription.ended_at != null
+  // Seit Stripe-API v2025-03 sitzt current_period_end auf dem SubscriptionItem.
+  const itemPeriodEnd = subscription.items.data[0]?.current_period_end ?? null
   const periodEndSeconds =
     subscription.status === 'active' || subscription.status === 'trialing'
-      ? subscription.current_period_end
-      : (subscription.ended_at ?? subscription.current_period_end)
+      ? itemPeriodEnd
+      : (subscription.ended_at ?? itemPeriodEnd)
 
-  const res = await fetch(`${supabaseUrl}/rest/v1/subscriptions`, {
-    method: 'POST',
-    headers: {
-      authorization: `Bearer ${serviceRoleKey}`,
-      apikey: serviceRoleKey,
-      'content-type': 'application/json',
-      prefer: 'resolution=merge-duplicates',
+  const row = {
+    user_id: userId,
+    stripe_customer_id: typeof customer === 'string' ? customer : null,
+    stripe_subscription_id: subscription.id,
+    status: canceled ? 'canceled' : subscription.status,
+    price_id: subscription.items.data[0]?.price?.id ?? null,
+    interval: subscription.items.data[0]?.price?.recurring?.interval ?? null,
+    current_period_end:
+      typeof periodEndSeconds === 'number' ? new Date(periodEndSeconds * 1000).toISOString() : null,
+    updated_at: new Date().toISOString(),
+    last_event_at: eventAt,
+  }
+  const headers = {
+    authorization: `Bearer ${serviceRoleKey}`,
+    apikey: serviceRoleKey,
+    'content-type': 'application/json',
+  }
+
+  // 1) Bedingtes Update: greift nur, wenn noch kein neueres Event geschrieben
+  //    hat. `last_event_at.lte.` inkludiert Duplikate desselben Events
+  //    (idempotent, gleicher Inhalt).
+  const guard = encodeURIComponent(`(last_event_at.is.null,last_event_at.lte.${eventAt})`)
+  const patchRes = await fetch(
+    `${supabaseUrl}/rest/v1/subscriptions?user_id=eq.${encodeURIComponent(userId)}&or=${guard}`,
+    {
+      method: 'PATCH',
+      headers: { ...headers, prefer: 'return=representation' },
+      body: JSON.stringify(row),
     },
-    body: JSON.stringify({
-      user_id: userId,
-      stripe_customer_id: typeof customer === 'string' ? customer : null,
-      stripe_subscription_id: subscription.id,
-      status: canceled ? 'canceled' : subscription.status,
-      price_id: subscription.items.data[0]?.price?.id ?? null,
-      interval: subscription.items.data[0]?.price?.recurring?.interval ?? null,
-      current_period_end:
-        typeof periodEndSeconds === 'number' ? new Date(periodEndSeconds * 1000).toISOString() : null,
-      updated_at: new Date().toISOString(),
-    }),
+  )
+  if (!patchRes.ok) {
+    const detail = await patchRes.text().catch(() => '')
+    throw new Error(`Supabase-Update fehlgeschlagen (${patchRes.status}): ${detail}`)
+  }
+  const patched: unknown = await patchRes.json()
+  if (Array.isArray(patched) && patched.length > 0) return
+
+  // 2) Keine Zeile getroffen: existiert bereits eine (→ Event ist veraltet,
+  //    bewusst nicht schreiben) oder noch keine (→ anlegen)?
+  const headRes = await fetch(
+    `${supabaseUrl}/rest/v1/subscriptions?user_id=eq.${encodeURIComponent(userId)}&select=user_id&limit=1`,
+    { headers },
+  )
+  if (!headRes.ok) {
+    const detail = await headRes.text().catch(() => '')
+    throw new Error(`Supabase-Abfrage fehlgeschlagen (${headRes.status}): ${detail}`)
+  }
+  const existing: unknown = await headRes.json()
+  if (Array.isArray(existing) && existing.length > 0) {
+    // Ein neueres Event hat bereits geschrieben — dieses ist überholt.
+    return
+  }
+
+  // 3) Erste Zeile anlegen (Duplikat-Race: Upsert bleibt idempotent).
+  const insertRes = await fetch(`${supabaseUrl}/rest/v1/subscriptions`, {
+    method: 'POST',
+    headers: { ...headers, prefer: 'resolution=merge-duplicates' },
+    body: JSON.stringify(row),
   })
   // Fehler nicht verschweigen: ein 200 hier würde Stripe vom Retry abhalten
   // und der zahlende Kunde bliebe dauerhaft ohne Pro.
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '')
-    throw new Error(`Supabase-Upsert fehlgeschlagen (${res.status}): ${detail}`)
+  if (!insertRes.ok) {
+    const detail = await insertRes.text().catch(() => '')
+    throw new Error(`Supabase-Upsert fehlgeschlagen (${insertRes.status}): ${detail}`)
   }
 }
 
