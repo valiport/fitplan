@@ -15,6 +15,12 @@ export interface Database {
         Update: { user_id?: string; profile_data?: unknown; updated_at?: string }
         Relationships: []
       }
+      market_profiles: {
+        Row: { user_id: string; display_name: string; updated_at: string }
+        Insert: { user_id: string; display_name: string; updated_at?: string }
+        Update: { user_id?: string; display_name?: string; updated_at?: string }
+        Relationships: []
+      }
       user_equipment: {
         Row: { user_id: string; sport: string; equipment_data: unknown; updated_at: string }
         Insert: { user_id: string; sport: string; equipment_data: unknown; updated_at?: string }
@@ -66,6 +72,7 @@ export interface Database {
     }
     Views: Record<string, never>
     Functions: {
+      set_market_display_name: { Args: { p_display_name: string }; Returns: undefined }
       send_friend_request: { Args: { p_to: string }; Returns: string }
       respond_friend_request: { Args: { p_friend: string; p_accept: boolean }; Returns: undefined }
       remove_friend: { Args: { p_friend: string }; Returns: undefined }

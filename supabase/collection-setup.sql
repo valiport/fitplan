@@ -3,6 +3,8 @@
 -- Idempotent — im Supabase-Dashboard (SQL Editor) NACH setup.sql ausführen.
 -- ============================================================
 
+-- Step-by-step Deploy-Anleitung: docs/markt-freunde-trades-anleitung.md
+
 -- Wallet + Inventar (eine Zeile pro User; inventory = plateId → Stückzahl)
 create table if not exists public.collections (
   user_id uuid primary key references auth.users(id) on delete cascade,
@@ -24,6 +26,54 @@ create policy "Users read own collection"
 drop policy if exists "Users insert own collection" on public.collections;
 drop policy if exists "Users update own collection" on public.collections;
 drop policy if exists "Users manage own collection" on public.collections;
+
+-- Öffentliche Marktplatz-Spitznamen (getrennt von privaten Fitnessprofilen).
+create table if not exists public.market_profiles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  display_name text not null,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.market_profiles enable row level security;
+revoke all on public.market_profiles from public, anon, authenticated;
+grant select on public.market_profiles to authenticated;
+drop policy if exists "Authenticated users read market display names" on public.market_profiles;
+create policy "Authenticated users read market display names"
+  on public.market_profiles for select to authenticated using (true);
+
+-- Eigener Anzeigename ausschließlich über auth.uid(), niemals über eine vom
+-- Client gelieferte Nutzer-ID. Fitnessprofil-Daten werden nicht veröffentlicht.
+create or replace function public.set_market_display_name(p_display_name text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_name text := btrim(p_display_name);
+  v_me uuid := (select auth.uid());
+begin
+  if v_me is null then raise exception 'Nicht angemeldet.'; end if;
+  if p_display_name is null or char_length(v_name) < 2 or char_length(v_name) > 24
+     or v_name ~ '[[:cntrl:]]' then
+    raise exception 'Der Spitzname muss 2 bis 24 Zeichen lang sein.';
+  end if;
+  insert into public.market_profiles (user_id, display_name, updated_at)
+  values (v_me, v_name, now())
+  on conflict (user_id) do update
+    set display_name = excluded.display_name, updated_at = excluded.updated_at;
+end;
+$$;
+revoke all on function public.set_market_display_name(text) from public, anon;
+grant execute on function public.set_market_display_name(text) to authenticated;
+
+-- Idempotente Einschränkungen sichern bestehende/erneut deployte Tabelle.
+alter table public.market_profiles drop constraint if exists market_profile_name_length;
+alter table public.market_profiles add constraint market_profile_name_length check (
+  char_length(display_name) between 2 and 24
+  and display_name = btrim(display_name)
+  and display_name !~ '[[:cntrl:]]'
+);
 
 -- Freundschaften: pending/accepted, alphabetisch sortierte Paare
 create table if not exists public.friends (
@@ -577,7 +627,8 @@ begin
 end;
 $$;
 
--- All writes are server RPCs; clients cannot bypass validation via table DML.
+-- All economy writes are server RPCs; market display names have only SELECT
+-- grants and are writable solely through the auth.uid()-bound RPC above.
 revoke all on function public.send_friend_request(uuid) from public, anon;
 revoke all on function public.respond_friend_request(uuid, boolean) from public, anon;
 revoke all on function public.create_trade(uuid, jsonb, jsonb) from public, anon;
@@ -606,7 +657,7 @@ declare
 begin
   -- Social-Tabellen auch live: Freunde/Trades/Markt-Änderungen des
   -- Partners erscheinen ohne Reload. Idempotent pro Tabelle.
-  foreach t in array array['collections', 'friends', 'trades', 'market_listings', 'market_transactions'] loop
+  foreach t in array array['collections', 'friends', 'trades', 'market_listings', 'market_transactions', 'market_profiles'] loop
     begin
       execute format('alter publication supabase_realtime add table public.%I', t);
     exception

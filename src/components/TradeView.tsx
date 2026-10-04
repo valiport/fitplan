@@ -1,7 +1,7 @@
 // Tausch-Tab: Freundesliste, Tausch-Angebot erstellen (beidseitige Auswahl),
 // eingehende/ausgehende Anfragen annehmen/ablehnen/zurückziehen + Historie.
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { PLATES, getPlate } from '../domain/plates'
 import { XpButton, XpGroupBox } from './ui'
 import type { FriendRequest, Trade, TradeItems, useFriends, useTrades } from '../hooks/useCollectionSocial'
@@ -40,6 +40,11 @@ export default function TradeView({ userId, inventory, friendsApi, tradesApi, on
   const [friendId, setFriendId] = useState('')
   const [friendBusy, setFriendBusy] = useState(false)
   const [removeId, setRemoveId] = useState<string | null>(null)
+  const [nameDraft, setNameDraft] = useState(friendsApi.displayName)
+  const [nameBusy, setNameBusy] = useState(false)
+  const [copiedId, setCopiedId] = useState(false)
+
+  useEffect(() => setNameDraft(friendsApi.displayName), [friendsApi.displayName])
 
   const incoming = tradesApi.trades.filter((t) => t.toUserId === userId && t.status === 'pending')
   const outgoing = tradesApi.trades.filter((t) => t.fromUserId === userId && t.status === 'pending')
@@ -79,6 +84,46 @@ export default function TradeView({ userId, inventory, friendsApi, tradesApi, on
       {/* Freunde */}
       <XpGroupBox title="Freunde">
         {friendsApi.error && <p role="alert" className="mb-1 text-[11px] text-[#ff9b92]">{friendsApi.error}</p>}
+        <div className="mb-2 rounded-[12px] border border-white/10 bg-white/5 p-2">
+          <label htmlFor="market-display-name" className="mb-1 block text-[11px] font-bold text-[#a9c4be]">Dein öffentlicher Markt-Spitzname</label>
+          <div className="flex gap-1.5">
+            <input
+              id="market-display-name"
+              aria-label="Öffentlicher Markt-Spitzname"
+              value={nameDraft}
+              onChange={(event) => setNameDraft(event.target.value)}
+              maxLength={24}
+              placeholder="z. B. PlattenSammler"
+              className="glass-input min-w-0 flex-1"
+              disabled={nameBusy}
+            />
+            <XpButton disabled={nameBusy || nameDraft.trim().length < 2 || nameDraft.trim() === friendsApi.displayName} onClick={() => {
+              setNameBusy(true)
+              void friendsApi.setDisplayName(nameDraft).then(() => {
+                setNotice('Dein Markt-Spitzname wurde gespeichert.')
+              }).catch((cause: unknown) => {
+                setNotice(cause instanceof Error ? cause.message : 'Spitzname konnte nicht gespeichert werden.')
+              }).finally(() => setNameBusy(false))
+            }}>{nameBusy ? 'Speichert…' : 'Speichern'}</XpButton>
+          </div>
+          <p className="mt-1 text-[10px] text-[#8bada7]">Nur dieser Name ist öffentlich sichtbar; dein Fitnessprofil bleibt privat.</p>
+        </div>
+        <div className="mb-2 flex flex-wrap items-center gap-1.5 rounded-[12px] border border-white/10 bg-white/5 p-2">
+          <span className="text-[11px] font-bold text-[#a9c4be]">Deine Freundes-ID:</span>
+          <code className="min-w-0 flex-1 break-all text-[10px] text-[#dcefec]">{userId}</code>
+          <XpButton className="!px-2 !py-1 !text-[10px]" onClick={() => {
+            void (async () => {
+              try {
+                if (!navigator.clipboard?.writeText) throw new Error('Zwischenablage nicht verfügbar.')
+                await navigator.clipboard.writeText(userId)
+                setCopiedId(true)
+                window.setTimeout(() => setCopiedId(false), 1800)
+              } catch {
+                setNotice('Kopieren nicht möglich. Bitte die angezeigte ID manuell kopieren.')
+              }
+            })()
+          }}>{copiedId ? 'Kopiert ✓' : 'ID kopieren'}</XpButton>
+        </div>
         <div className="mb-2 flex gap-1.5">
           <input
             aria-label="Freundes-UUID"
@@ -206,7 +251,7 @@ export default function TradeView({ userId, inventory, friendsApi, tradesApi, on
         {incoming.length === 0 ? (
           <p className="text-[12px] text-[#8bada7]">Keine offenen Angebote.</p>
         ) : (
-          incoming.map((trade) => <TradeRow key={trade.id} trade={trade} tradesApi={tradesApi} userId={userId} onChanged={onChanged} />)
+          incoming.map((trade) => <TradeRow key={trade.id} trade={trade} tradesApi={tradesApi} userId={userId} friendName={friends.find((f) => f.id === trade.fromUserId)?.name} onChanged={onChanged} />)
         )}
       </XpGroupBox>
 
@@ -215,7 +260,7 @@ export default function TradeView({ userId, inventory, friendsApi, tradesApi, on
         {outgoing.length === 0 ? (
           <p className="text-[12px] text-[#8bada7]">Keine offenen Angebote.</p>
         ) : (
-          outgoing.map((trade) => <TradeRow key={trade.id} trade={trade} tradesApi={tradesApi} userId={userId} onChanged={onChanged} />)
+          outgoing.map((trade) => <TradeRow key={trade.id} trade={trade} tradesApi={tradesApi} userId={userId} friendName={friends.find((f) => f.id === trade.toUserId)?.name} onChanged={onChanged} />)
         )}
       </XpGroupBox>
 
@@ -241,10 +286,11 @@ export default function TradeView({ userId, inventory, friendsApi, tradesApi, on
 }
 
 /** Zeile eines Trades mit Aktionen (annehmen/ablehnen/zurückziehen). */
-function TradeRow({ trade, tradesApi, userId, onChanged }: {
+function TradeRow({ trade, tradesApi, userId, friendName, onChanged }: {
   trade: Trade
   tradesApi: ReturnType<typeof useTrades>
   userId: string
+  friendName?: string
   onChanged: () => void
 }) {
   const [busy, setBusy] = useState(false)
@@ -284,7 +330,7 @@ function TradeRow({ trade, tradesApi, userId, onChanged }: {
   return (
     <div className="glass-inset mb-1.5 p-2">
       <p className="text-[12px] text-[#dcefec]">
-        <span className="font-bold">{isIncoming ? 'Von' : 'An'} Freund:</span>{' '}
+        <span className="font-bold">{isIncoming ? 'Von' : 'An'} {friendName ?? 'Freund'}:</span>{' '}
         {describe(trade.offered)} ⇄ {describe(trade.requested)}
       </p>
       <div className="mt-1.5 flex gap-1.5">
@@ -325,7 +371,7 @@ function FriendRequestRow({ request, api }: { request: FriendRequest; api: Retur
   }
   return (
     <div className="glass-inset mb-1 flex items-center justify-between gap-2 p-2">
-      <span className="min-w-0 truncate text-[11px] text-[#dcefec]">Nutzer {request.fromUserId.slice(0, 8)} möchte Freund werden</span>
+      <span className="min-w-0 truncate text-[11px] text-[#dcefec]">{request.fromName} möchte Freund werden</span>
       <span className="flex gap-1">
         <XpButton disabled={busy} className="!px-2 !py-1 !text-[10px]" onClick={() => void respond(true)}>Annehmen</XpButton>
         <XpButton disabled={busy} variant="danger" className="!px-2 !py-1 !text-[10px]" onClick={() => void respond(false)}>Ablehnen</XpButton>

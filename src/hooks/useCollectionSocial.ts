@@ -1,5 +1,5 @@
 // Soziale Schicht der Sammlung: Freunde, Trades, Marktplatz.
-// Mit Supabase: echte Tabellen (profiles, friends, trades, market_listings)
+// Mit Supabase: echte Tabellen (market_profiles, friends, trades, listings)
 // mit RLS und atomaren SQL-Funktionen. Ohne Supabase: lokale Demo-Modus-
 // Fallbacks, damit die UI immer testbar bleibt.
 
@@ -18,17 +18,20 @@ export interface Friend {
 export interface FriendRequest {
   id: string
   fromUserId: string
+  fromName: string
   toUserId: string
   createdAt: string
 }
 
 /**
- * Freundesliste. Mit Supabase aus `friends` gelesen (akzeptierte Beziehungen,
- * Namen über Profile). Ohne: drei Demo-Freunde (Namen statisch, Inventar leer).
+ * Freundesliste aus `friends`, Namen aus dem separaten öffentlichen Marktprofil.
+ * Ohne Cloud: drei Demo-Freunde (nur Oberfläche, keine echten Sozialfunktionen).
  */
 export function useFriends(userId: string): {
   friends: Friend[]
   requests: FriendRequest[]
+  displayName: string
+  setDisplayName: (name: string) => Promise<void>
   loading: boolean
   error: string | null
   sendRequest: (toUserId: string) => Promise<void>
@@ -38,6 +41,7 @@ export function useFriends(userId: string): {
 } {
   const [friends, setFriends] = useState<Friend[]>([])
   const [requests, setRequests] = useState<FriendRequest[]>([])
+  const [displayName, setDisplayNameState] = useState('')
   const [loading, setLoading] = useState(Boolean(supabase))
   const [error, setError] = useState<string | null>(null)
 
@@ -49,6 +53,7 @@ export function useFriends(userId: string): {
         { id: 'demo-friend-3', name: 'Tobi (Demo)' },
       ])
       setRequests([])
+      setDisplayNameState('')
       setLoading(false)
       return
     }
@@ -61,28 +66,28 @@ export function useFriends(userId: string): {
       if (queryError) throw queryError
       const rows = (data ?? []) as { id: string; user_id_a: string; user_id_b: string; requested_by: string; status: string; created_at: string }[]
       const accepted = rows.filter((row) => row.status === 'accepted')
-      setRequests(rows.filter((row) => row.status === 'pending' && row.requested_by !== userId)
-        .map((row) => ({ id: row.id, fromUserId: row.requested_by, toUserId: userId, createdAt: row.created_at })))
+      const incomingRequests = rows.filter((row) => row.status === 'pending' && row.requested_by !== userId)
       const otherIds = accepted.map((row) => (row.user_id_a === userId ? row.user_id_b : row.user_id_a))
-      if (otherIds.length === 0) {
-        setFriends([])
-        setError(null)
-        return
-      }
+      const profileIds = [...new Set([userId, ...otherIds, ...incomingRequests.map((row) => row.requested_by)])]
       const { data: profiles, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('user_id,profile_data')
-        .in('user_id', otherIds)
+        .from('market_profiles')
+        .select('user_id,display_name')
+        .in('user_id', profileIds)
       if (profileError) throw profileError
-      setFriends(otherIds.map((id) => {
-        const profile = ((profiles ?? []) as { user_id: string; profile_data: unknown }[])
-          .find((item) => item.user_id === id)
-        const data = profile?.profile_data as Record<string, unknown> | null
-        const name = typeof data?.['displayName'] === 'string' && data['displayName'].length > 0
-          ? data['displayName'] as string
-          : `Nutzer ${id.slice(0, 6)}`
-        return { id, name }
-      }))
+      const names = Object.fromEntries(((profiles ?? []) as { user_id: string; display_name: string }[])
+        .map((profile) => [profile.user_id, profile.display_name]))
+      setDisplayNameState(names[userId] ?? '')
+      setRequests(incomingRequests.map((row) => ({
+        id: row.id,
+        fromUserId: row.requested_by,
+        fromName: names[row.requested_by] ?? `Nutzer ${row.requested_by.slice(0, 6)}`,
+        toUserId: userId,
+        createdAt: row.created_at,
+      })))
+      setFriends(otherIds.map((id) => ({
+        id,
+        name: names[id] ?? `Nutzer ${id.slice(0, 6)}`,
+      })))
       setError(null)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Freundesliste konnte nicht geladen werden.')
@@ -99,9 +104,22 @@ export function useFriends(userId: string): {
     const channel = supabase
       .channel(`friends:${userId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'friends' }, () => { void load() })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'market_profiles' }, () => { void load() })
       .subscribe()
     return () => { void supabase?.removeChannel(channel) }
   }, [userId, load])
+
+  const setDisplayName = useCallback(async (name: string) => {
+    if (!supabase) throw new Error('Spitznamen speichern benötigt die Cloud.')
+    const normalized = name.trim()
+    if (normalized.length < 2 || normalized.length > 24 || /[\u0000-\u001f\u007f]/.test(normalized)) {
+      throw new Error('Der Spitzname muss 2 bis 24 Zeichen lang sein.')
+    }
+    const { error: rpcError } = await supabase.rpc('set_market_display_name', { p_display_name: normalized })
+    if (rpcError) throw rpcError
+    setDisplayNameState(normalized)
+    await load()
+  }, [load])
 
   const sendRequest = useCallback(async (toUserId: string) => {
     if (!supabase) throw new Error('Freundschaftsanfragen benötigen die Cloud.')
@@ -128,7 +146,7 @@ export function useFriends(userId: string): {
     await load()
   }, [load])
 
-  return { friends, requests, loading, error, sendRequest, respondRequest, removeFriend, reload: load }
+  return { friends, requests, displayName, setDisplayName, loading, error, sendRequest, respondRequest, removeFriend, reload: load }
 }
 
 // ------------------------------------------------------------------ Trades
@@ -344,15 +362,13 @@ export function useMarket(userId: string, friends: Friend[]) {
       const sellerIds = [...new Set(rows.map((r) => r.seller_id))]
       let names: Record<string, string> = {}
       if (sellerIds.length > 0) {
-        const { data: profiles } = await supabase!
-          .from('user_profiles')
-          .select('user_id,profile_data')
+        const { data: profiles, error: profileError } = await supabase!
+          .from('market_profiles')
+          .select('user_id,display_name')
           .in('user_id', sellerIds)
-        for (const p of ((profiles ?? []) as { user_id: string; profile_data: unknown }[])) {
-          const pd = p.profile_data as Record<string, unknown> | null
-          names[p.user_id] = typeof pd?.['displayName'] === 'string' && pd['displayName'].length > 0
-            ? pd['displayName'] as string
-            : `Nutzer ${p.user_id.slice(0, 6)}`
+        if (profileError) throw profileError
+        for (const p of ((profiles ?? []) as { user_id: string; display_name: string }[])) {
+          names[p.user_id] = p.display_name
         }
       }
       setListings(rows.map((row) => ({
@@ -421,6 +437,7 @@ export function useMarket(userId: string, friends: Friend[]) {
     const channel = supabase
       .channel(`market:${userId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'market_listings' }, () => { void load() })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'market_profiles' }, () => { void load() })
       .subscribe()
     return () => { void supabase?.removeChannel(channel) }
   }, [userId, load])

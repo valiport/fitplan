@@ -160,8 +160,8 @@ describe('eigene Angebote sichtbar (Rückweg für reservierte Platten)', () => {
       data: [{ id: 'l1', seller_id: 'other-1', plate_id: 'cp-125', price: 20, status: 'active', created_at: '2026-10-01T10:00:00Z' }],
       error: null,
     })
-    queueResult('user_profiles', {
-      data: [{ user_id: 'other-1', profile_data: { displayName: 'Anna' } }],
+    queueResult('market_profiles', {
+      data: [{ user_id: 'other-1', display_name: 'Anna' }],
       error: null,
     })
     queueResult('market_listings', {
@@ -178,6 +178,9 @@ describe('eigene Angebote sichtbar (Rückweg für reservierte Platten)', () => {
 
     expect(result.current.listings).toHaveLength(1)
     expect(result.current.listings[0]).toMatchObject({ id: 'l1', sellerName: 'Anna' })
+    expect(queryCalls('market_profiles')).toContainEqual({
+      table: 'market_profiles', method: 'select', args: ['user_id,display_name'],
+    })
     expect(result.current.ownListings).toHaveLength(1)
     expect(result.current.ownListings[0]).toMatchObject({ id: 'l2', sellerName: 'Du' })
     expect(result.current.transactions[0]).toMatchObject({ direction: 'buy', counterparty: 'other-1' })
@@ -199,8 +202,8 @@ describe('useFriends: Cloud-Verträge', () => {
       ],
       error: null,
     })
-    queueResult('user_profiles', {
-      data: [{ user_id: 'friend-b', profile_data: { displayName: 'Anna' } }],
+    queueResult('market_profiles', {
+      data: [{ user_id: 'friend-b', display_name: 'Anna' }],
       error: null,
     })
 
@@ -210,7 +213,10 @@ describe('useFriends: Cloud-Verträge', () => {
     expect(result.current.friends).toEqual([{ id: 'friend-b', name: 'Anna' }])
     // f3 ist eine eigene ausgehende Anfrage — darf nicht als Anfrage erscheinen.
     expect(result.current.requests).toHaveLength(1)
-    expect(result.current.requests[0]).toMatchObject({ id: 'f2', fromUserId: 'friend-a', toUserId: 'user-1' })
+    expect(result.current.requests[0]).toMatchObject({ id: 'f2', fromUserId: 'friend-a', fromName: 'Nutzer friend', toUserId: 'user-1' })
+    expect(queryCalls('market_profiles')).toContainEqual({
+      table: 'market_profiles', method: 'select', args: ['user_id,display_name'],
+    })
     expect(result.current.error).toBeNull()
   })
 
@@ -219,7 +225,7 @@ describe('useFriends: Cloud-Verträge', () => {
       data: [{ id: 'f1', user_id_a: 'user-1', user_id_b: 'friend-b', requested_by: 'friend-b', status: 'accepted', created_at: '2026-09-01T10:00:00Z' }],
       error: null,
     })
-    queueResult('user_profiles', { data: [], error: null })
+    queueResult('market_profiles', { data: [], error: null })
 
     const { result } = renderHook(() => useFriends('user-1'))
     await waitFor(() => expect(result.current.loading).toBe(false))
@@ -251,6 +257,55 @@ describe('useFriends: Cloud-Verträge', () => {
       await result.current.respondRequest('f2', true)
     })
     expect(supabaseRpc).toHaveBeenCalledWith('respond_friend_request', { p_friend: 'f2', p_accept: true })
+  })
+
+  it('lädt eigenen Spitznamen und eingehende Anfrage-Namen aus der separaten Markttabelle', async () => {
+    queueResult('friends', {
+      data: [
+        { id: 'f1', user_id_a: 'friend-a', user_id_b: 'user-1', requested_by: 'friend-a', status: 'pending', created_at: '2026-10-01T10:00:00Z' },
+      ],
+      error: null,
+    })
+    queueResult('market_profiles', {
+      data: [
+        { user_id: 'user-1', display_name: 'MeinName' },
+        { user_id: 'friend-a', display_name: 'Anna' },
+      ],
+      error: null,
+    })
+
+    const { result } = renderHook(() => useFriends('user-1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.displayName).toBe('MeinName')
+    expect(result.current.requests[0]).toMatchObject({ fromName: 'Anna', fromUserId: 'friend-a' })
+    expect(queryCalls('market_profiles')).toContainEqual({
+      table: 'market_profiles', method: 'select', args: ['user_id,display_name'],
+    })
+  })
+
+  it('speichert validierte Spitznamen über die auth-gebundene RPC', async () => {
+    supabaseRpc.mockResolvedValueOnce({ data: null, error: null })
+    const { result } = renderHook(() => useFriends('user-1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    queueResult('friends', { data: [], error: null })
+    queueResult('market_profiles', { data: [{ user_id: 'user-1', display_name: 'FitPlanFan' }], error: null })
+
+    await act(async () => {
+      await result.current.setDisplayName('  FitPlanFan  ')
+    })
+    expect(supabaseRpc).toHaveBeenCalledWith('set_market_display_name', { p_display_name: 'FitPlanFan' })
+    expect(result.current.displayName).toBe('FitPlanFan')
+  })
+
+  it('lehnt ungültige Spitznamen ohne RPC ab', async () => {
+    const { result } = renderHook(() => useFriends('user-1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    await act(async () => {
+      await expect(result.current.setDisplayName('x')).rejects.toThrow('Der Spitzname muss 2 bis 24 Zeichen lang sein.')
+      await expect(result.current.setDisplayName('Name' + String.fromCharCode(10) + 'Hack')).rejects.toThrow('Der Spitzname muss 2 bis 24 Zeichen lang sein.')
+    })
+    expect(supabaseRpc).not.toHaveBeenCalled()
   })
 
   it('remove_friend sendet nur p_friend (Freundschaft beenden)', async () => {

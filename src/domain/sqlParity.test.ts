@@ -27,6 +27,20 @@ describe('SQL-Parität: create_listing vs MIN_PRICE', () => {
   })
 })
 
+describe('SQL-Parität: öffentliche Marktprofile', () => {
+  it('trennt Markt-Spitznamen vom privaten Fitnessprofil', () => {
+    expect(collectionSql).toContain('create table if not exists public.market_profiles')
+    expect(collectionSql).toContain("revoke all on public.market_profiles from public, anon, authenticated")
+    expect(collectionSql).toContain('grant select on public.market_profiles to authenticated')
+    expect(collectionSql).toContain('create policy "Authenticated users read market display names"')
+    expect(collectionSql).toContain('create or replace function public.set_market_display_name(p_display_name text)')
+    expect(collectionSql).toContain('v_me uuid := (select auth.uid());')
+    expect(collectionSql).toContain('values (v_me, v_name, now())')
+    expect(collectionSql).toContain("grant execute on function public.set_market_display_name(text) to authenticated")
+    expect(collectionSql).toContain("'market_profiles'] loop")
+  })
+})
+
 describe('SQL-Parität: Plate-IDs', () => {
   it('Tausch-Whitelist im create_trade enthält genau den Client-Katalog', () => {
     const matches = [...collectionSql.matchAll(/'([a-z0-9-]+)','([a-z0-9-]+)','([a-z0-9-]+)','([a-z0-9-]+)','([a-z0-9-]+)','([a-z0-9-]+)','([a-z0-9-]+)','([a-z0-9-]+)','([a-z0-9-]+)','([a-z0-9-]+)'/g)]
